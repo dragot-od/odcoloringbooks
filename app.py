@@ -69,11 +69,11 @@ SCENE_DIRECTIONS = [
 ]
 
 COVER_COMPOSITIONS = [
-    "Use a lively three-quarter composition with the characters in the foreground and the themed world opening behind them. Leave clean visual space across the upper portion for a title overlay.",
-    "Use a dynamic low-angle storybook composition with the characters caught in an active moment rather than posing. Leave an uncluttered upper band for the title.",
-    "Use a warm cinematic wide composition with foreground props framing the characters and a clear themed landmark behind them. Reserve the top area for title text.",
-    "Use an inviting close-to-medium composition centered on the characters discovering something together, with layered scenery creating depth. Keep the upper area visually simple for the title.",
-    "Use an asymmetrical adventure-poster composition with the characters offset from center and a strong environmental feature balancing the scene. Preserve open space near the top for the title.",
+    "Use a lively three-quarter composition with the characters in the foreground and the themed world opening behind them. Integrate the title naturally near the top of the composition with clear readable storybook lettering.",
+    "Use a dynamic low-angle storybook composition with the characters caught in an active moment rather than posing. Include a clear readable title near the top, integrated into the cover design.",
+    "Use a warm cinematic wide composition with foreground props framing the characters and a clear themed landmark behind them. Integrate readable title text naturally into the upper part of the cover.",
+    "Use an inviting close-to-medium composition centered on the characters discovering something together, with layered scenery creating depth. Make the upper area suitable for readable integrated title lettering.",
+    "Use an asymmetrical adventure-poster composition with the characters offset from center and a strong environmental feature balancing the scene. Design the upper area so the title can appear clearly as part of the illustration.",
 ]
 
 MOODS = [
@@ -303,10 +303,10 @@ def cover_prompt(names: list[str], title: str, theme: str) -> str:
     ids = identity_text(names, list(range(len(names))))
     return f"""
 Draw a polished full-color personalized coloring-book COVER illustration.
-Book title will be added locally after generation, so DO NOT draw any words or letters. Leave a visually calm upper area for title placement.
 Theme: {theme}
 Characters who must all appear: {people}
 {ids}
+Render the exact book title "{title}" exactly once, clearly and legibly, integrated naturally into the cover design near the top. Use playful children's-book typography that feels part of the artwork itself. Do NOT place the title inside a plain white rectangular box. Do NOT add any other words, captions, labels, logos, or stray text.
 Create a warm, appealing, original scene that clearly communicates the theme. Use a fresh composition, natural poses, expressive faces, and a family-friendly storybook aesthetic. Keep key faces and bodies safely away from page edges. Single full-page portrait composition only; no panels, grids, contact sheets, borders of mini-scenes, or collage layouts.
 {COPYRIGHT_SAFETY}
 """.strip()
@@ -340,7 +340,6 @@ def generate_real_job(job_id: str):
         cover = openai_edit(refs, cover_prompt(names, job["title"], job["theme"]), "high")
         cover_path = job_dir / "cover.png"
         cover.save(cover_path, "PNG")
-        add_cover_title(cover_path, job["title"])
 
         assignments = page_assignments(names)
         set_job(job_id, assignments=assignments)
