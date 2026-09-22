@@ -16,7 +16,7 @@
   <section class="hero">
     <div class="eyebrow">Corporate concept demo</div>
     <h1>Personalized Coloring Book Studio</h1>
-    <p>Upload one or more people, enter a title and a detailed description of the cartoon world you want, and create a small AI-generated demo book. Or copy the full 24-page ChatGPT workflow for a manual test.</p>
+    <p>Upload one or more people, enter a title, target age, and a detailed description of the cartoon world you want, and create a small AI-generated demo book. Or copy the full 24-page ChatGPT workflow for a manual test.</p>
   </section>
 
   <section class="card">
@@ -25,10 +25,12 @@
     <form id="bookForm">
       <div class="grid">
         <div class="field full"><label>Book title</label><input id="title" value="Willy Meets Bigfoot" required /></div>
+        <div class="field"><label>Target age</label><input id="age" type="number" min="3" max="17" value="5" required /></div>
+        <div class="field"><label>Age guidance</label><div class="note" style="margin-top:0">Younger kids get simpler pages with thicker outlines and fewer objects. Older kids and teens get richer scenes and more detail.</div></div>
         <div class="field full">
           <label>Detailed Description</label>
           <textarea id="description" required placeholder="Describe the world, settings, activities, mood, side characters or creatures, important objects, and visual details you want to see throughout the book.">Willy explores a whimsical forest while meeting a friendly Bigfoot. Show varied locations such as a woodland trail, creek, clearing, log bridge, waterfall, cozy cave, giant trees, mushrooms, ferns, and a sunset overlook. Include playful outdoor activities, forest animals, backpacks, maps, lanterns, and other adventure props. Keep the mood warm, funny, adventurous, and family-friendly.</textarea>
-          <div class="help"><b>Tip:</b> Be specific about the setting. Include rooms or locations, activities, important objects, creatures or side characters, and the mood/style. The generator will spread those details across different pages instead of focusing only on the people.</div>
+          <div class="help"><b>Tip:</b> Be specific about the setting. Include rooms or locations, activities, important objects, creatures or side characters, and the mood/style. The generator will spread those details across different pages instead of focusing only on the people. It will also adapt the complexity of the coloring pages to the target age.</div>
         </div>
         <div class="field full">
           <label>Characters</label>
@@ -58,7 +60,7 @@
 
   <section class="card">
     <h2>Manual ChatGPT fallback</h2>
-    <p class="sub">This does not use your website API credit. The website builds two prompts from the same title, Detailed Description, and characters above.</p>
+    <p class="sub">This does not use your website API credit. The website builds two prompts from the same title, target age, Detailed Description, and characters above.</p>
     <div class="fresh"><b>Fresh redesign rule:</b> every new artwork attempt should start in a brand-new ChatGPT conversation. Re-upload only the original source photos, then paste a newly generated Prompt 1. Do not reuse old AI artwork as a reference.</div>
     <div class="actions" style="margin-top:0;margin-bottom:14px"><button class="btn secondary" id="makePrompts" type="button">Generate ChatGPT Prompts</button><button class="btn secondary" id="differentPrompt" type="button">Generate Different Artwork Prompt</button></div>
     <div class="manual">
@@ -111,11 +113,11 @@ fetch('/api/config').then(r=>r.json()).then(c=>{apiConfigured=c.api_configured;i
 
 function showError(msg){error.textContent=msg;error.style.display='block';}
 function formDataForBook(){
-  const fd=new FormData(); fd.append('mode',demoMode.checked?'demo':'real');fd.append('title',document.getElementById('title').value.trim());fd.append('description',document.getElementById('description').value.trim());
+  const fd=new FormData(); fd.append('mode',demoMode.checked?'demo':'real');fd.append('title',document.getElementById('title').value.trim());fd.append('age',document.getElementById('age').value.trim());fd.append('description',document.getElementById('description').value.trim());
   [...chars.children].forEach(el=>{fd.append('character_names',el.querySelector('.pname').value.trim());const f=el.querySelector('.pphoto').files[0];if(f)fd.append('photos',f);});return fd;
 }
-function readFields(){return {title:document.getElementById('title').value.trim(),description:document.getElementById('description').value.trim(),names:[...chars.querySelectorAll('.pname')].map(x=>x.value.trim()).filter(Boolean)};}
-function validate(needPhotos=true){const f=readFields();if(!f.title||!f.description||!f.names.length){showError('Enter a title, a detailed description, and at least one person.');return false;}if(needPhotos){for(const el of chars.children){if(!el.querySelector('.pphoto').files[0]){showError('Every person needs an uploaded photo.');return false;}}}return true;}
+function readFields(){return {title:document.getElementById('title').value.trim(),age:parseInt(document.getElementById('age').value,10),description:document.getElementById('description').value.trim(),names:[...chars.querySelectorAll('.pname')].map(x=>x.value.trim()).filter(Boolean)};}
+function validate(needPhotos=true){const f=readFields();if(!f.title||!f.description||!f.names.length||!Number.isInteger(f.age)){showError('Enter a title, target age, a detailed description, and at least one person.');return false;}if(f.age<3||f.age>17){showError('Target age must be between 3 and 17.');return false;}if(needPhotos){for(const el of chars.children){if(!el.querySelector('.pphoto').files[0]){showError('Every person needs an uploaded photo.');return false;}}}return true;}
 
 form.onsubmit=async e=>{
   e.preventDefault();error.style.display='none';gallery.style.display='none';
