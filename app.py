@@ -40,7 +40,8 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 jobs: dict[str, dict] = {}
 jobs_lock = threading.Lock()
 
-APP_VERSION = "detailed-description-environments-v4"
+APP_VERSION = "age-adaptive-scene-planner-v6"
+TEXT_MODEL = os.getenv("TEXT_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini"
 
 COPYRIGHT_SAFETY = (
     "Use only original, generic imagery. Do not include or closely imitate copyrighted characters, "
@@ -90,6 +91,35 @@ VIEWPOINTS = [
     "avoid repeated straight-on portraits; use varied camera distances and angles",
     "mix close, medium, and wider environmental compositions throughout the book",
 ]
+
+
+def age_guidance(age: int) -> str:
+    if age <= 5:
+        return (
+            "Target age is 3–5. Keep the artwork very simple and easy to color: thick bold outlines, very large coloring spaces, very simple shapes, fewer objects per page, highly readable facial expressions, and uncluttered backgrounds. Still show the setting clearly, but use simplified environmental details rather than dense scenes."
+        )
+    if age <= 8:
+        return (
+            "Target age is 6–8. Keep the artwork simple and child-friendly: bold outlines, large coloring spaces, clear action, and moderate environmental detail. Show recognizable settings and props, but avoid clutter or excessive tiny detail."
+        )
+    if age <= 12:
+        return (
+            "Target age is 9–12. Use moderate detail: clean line art, good environmental detail, more interesting props and scenery, and somewhat smaller coloring regions where appropriate, while keeping the page readable and fun to color."
+        )
+    return (
+        "Target age is 13+. Use more detailed and sophisticated coloring-book line art: still clean and readable, but with richer environments, more texture and props, more complex scenery, and a more advanced level of visual detail suitable for teens."
+    )
+
+
+def age_label(age: int) -> str:
+    if age <= 5:
+        return "ages 3–5"
+    if age <= 8:
+        return "ages 6–8"
+    if age <= 12:
+        return "ages 9–12"
+    return "ages 13+"
+
 
 
 def _unauthorized() -> Response:
@@ -244,6 +274,122 @@ def identity_text(names: list[str], indices: list[int]) -> str:
     )
 
 
+def _extract_json_object(raw: str) -> dict:
+    raw = raw.strip()
+    if raw.startswith("```"):
+        parts = raw.split("```")
+        if len(parts) >= 3:
+            raw = parts[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+            raw = raw.strip()
+    start = raw.find("{")
+    end = raw.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        raise ValueError("No JSON object found in model response.")
+    return json.loads(raw[start:end+1])
+
+
+def fallback_scene_plan(names: list[str], description: str, assignments: list[dict], age: int) -> dict:
+    people = ", ".join(names)
+    cover_brief = (
+        f"A highly creative personalized children's-book cover for {age_label(age)} showing {people} in a scene that clearly expresses this detailed description: {description}. "
+        f"Use a fresh composition, strong sense of place, expressive faces, layered foreground/midground/background detail, and a clear family-friendly storybook feel."
+    )
+    pages = []
+    for i, assignment in enumerate(assignments, start=1):
+        selected = [names[x] for x in assignment["indices"]]
+        who = selected[0] if len(selected) == 1 else " and ".join(selected)
+        pages.append({
+            "page": i,
+            "brief": f"Page {i} should feature {who} in {SCENE_DIRECTIONS[i-1]}, strongly grounded in this detailed description: {description}. Show a specific location with meaningful environmental details, props, and action. Complexity should suit {age_label(age)}."
+        })
+    return {"cover_brief": cover_brief, "pages": pages}
+
+
+def plan_scene_briefs(names: list[str], title: str, description: str, assignments: list[dict], age: int) -> dict:
+    if not OPENAI_API_KEY:
+        return fallback_scene_plan(names, description, assignments, age)
+
+    plan_lines = []
+    for i, assignment in enumerate(assignments, start=1):
+        selected = [names[x] for x in assignment["indices"]]
+        label = selected[0] if len(selected) == 1 else " + ".join(selected)
+        plan_lines.append(f"Page {i}: {'solo' if len(selected)==1 else 'group'} — {label}")
+    plan_text = "\n".join(plan_lines)
+    people = ", ".join(names)
+    system = (
+        "You are a creative art director for children's coloring books. "
+        "Your job is to transform a user's description into vivid, visually rich scene briefs for image generation. "
+        "Always emphasize strong environments, varied sub-locations, props, architecture, scenery, and specific actions. "
+        "Avoid generic repeated scenes. Return strict JSON only."
+    )
+    user = f"""Create an 8-page interior scene plan plus one cover scene brief for a personalized children's coloring book.
+
+Book title: {title}
+Characters: {people}
+Target age: {age} ({age_label(age)})\nAge-specific art guidance: {age_guidance(age)}\n\nDetailed Description:\n{description}\n\nInterior page cast plan (must be followed):
+{plan_text}
+
+Requirements:
+- Create one short but specific cover_brief for the cover image.
+- Create exactly 8 page briefs, one for each page listed above.
+- Each page brief must be visually distinct from the others.
+- Each page brief must clearly depict a specific environment or sub-location, not just characters floating on a vague backdrop.
+- Spread the action across different rooms, landmarks, settings, or activity moments implied by the description.
+- Mention meaningful props, scenery, and background details.
+- Make the scenes imaginative, storybook-like, and more creative than a literal one-line interpretation.
+- Keep the scenes family-friendly and suitable for a children's coloring book.
+- Respect the page cast plan exactly.
+- Do not include copyrighted characters or franchise-specific elements.
+
+Return JSON only in this exact structure:
+{{
+  "cover_brief": "...",
+  "pages": [
+    {{"page": 1, "brief": "..."}},
+    {{"page": 2, "brief": "..."}},
+    {{"page": 3, "brief": "..."}},
+    {{"page": 4, "brief": "..."}},
+    {{"page": 5, "brief": "..."}},
+    {{"page": 6, "brief": "..."}},
+    {{"page": 7, "brief": "..."}},
+    {{"page": 8, "brief": "..."}}
+  ]
+}}
+"""
+
+    headers = {"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"}
+    payload = {
+        "model": TEXT_MODEL,
+        "response_format": {"type": "json_object"},
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        "temperature": 1.0,
+        "max_tokens": 1800,
+    }
+    response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload, timeout=120)
+    if response.status_code >= 400:
+        return fallback_scene_plan(names, description, assignments, age)
+    try:
+        raw = response.json()["choices"][0]["message"]["content"]
+        data = _extract_json_object(raw)
+        pages = data.get("pages", [])
+        if not isinstance(data.get("cover_brief"), str) or len(pages) != len(assignments):
+            raise ValueError("Planner returned invalid structure")
+        normalized = []
+        for i, item in enumerate(pages, start=1):
+            brief = str(item.get("brief", "")).strip()
+            if not brief:
+                raise ValueError("Planner page brief missing")
+            normalized.append({"page": i, "brief": brief})
+        return {"cover_brief": str(data["cover_brief"]).strip(), "pages": normalized}
+    except Exception:
+        return fallback_scene_plan(names, description, assignments, age)
+
+
 def openai_edit(reference_paths: list[Path], prompt: str, quality: str) -> Image.Image:
     if not OPENAI_API_KEY:
         raise RuntimeError("OPENAI_API_KEY is not configured. Use Demo Mode or add the key in Render.")
@@ -252,6 +398,7 @@ def openai_edit(reference_paths: list[Path], prompt: str, quality: str) -> Image
     headers = {"Authorization": f"Bearer {OPENAI_API_KEY}"}
     data = {
         "model": IMAGE_MODEL,
+        "planner_model": TEXT_MODEL,
         "prompt": prompt,
         "size": "1088x1408",  # exact 8.5:11 aspect ratio; both dimensions divisible by 16
         "quality": quality,
@@ -277,7 +424,7 @@ def openai_edit(reference_paths: list[Path], prompt: str, quality: str) -> Image
     return Image.open(io.BytesIO(base64.b64decode(b64))).convert("RGB")
 
 
-def cover_prompt(names: list[str], title: str, description: str) -> str:
+def cover_prompt(names: list[str], title: str, description: str, scene_brief: str, age: int) -> str:
     people = ", ".join(names)
     ids = identity_text(names, list(range(len(names))))
     return f"""
@@ -285,7 +432,7 @@ Draw a polished full-color personalized coloring-book COVER illustration.
 DETAILED DESCRIPTION:
 {description}
 
-Characters who must all appear: {people}
+TARGET AGE: {age} ({age_label(age)})\nAGE-APPROPRIATE ART GUIDANCE: {age_guidance(age)}\n\nCREATIVE COVER BRIEF:\n{scene_brief}\n\nCharacters who must all appear: {people}
 {ids}
 
 TITLE — EXACT TEXT:
@@ -297,30 +444,28 @@ ABSOLUTELY NO TITLE BACKDROP OR CONTAINER. Do not place the title on or inside a
 
 Do NOT add any other words, captions, labels, logos, watermarks, or stray text.
 
-Treat the Detailed Description as a visual specification, not merely a loose theme. The cover must clearly show the described world or location through recognizable architecture, scenery, props, objects, and atmosphere. Do not reduce the scene to only the people and supporting creatures. Use a fresh composition, natural poses, expressive faces, and a family-friendly storybook aesthetic. Compose the upper background so it has enough visual simplicity for lettering while still remaining part of the illustrated scene. Keep key faces and bodies safely away from page edges. Single full-page portrait composition only; no panels, grids, contact sheets, borders of mini-scenes, or collage layouts.
+Treat the Detailed Description as a visual specification, not merely a loose theme. The cover must clearly show the described world or location through recognizable architecture, scenery, props, objects, and atmosphere. Do not reduce the scene to only the people and supporting creatures. Use a fresh composition, natural poses, expressive faces, and a family-friendly storybook aesthetic. The complexity of the drawing, environmental density, and amount of detail must match the target age guidance. Compose the upper background so it has enough visual simplicity for lettering while still remaining part of the illustrated scene. Keep key faces and bodies safely away from page edges. Single full-page portrait composition only; no panels, grids, contact sheets, borders of mini-scenes, or collage layouts.
 {COPYRIGHT_SAFETY}
 """.strip()
 
 
-def interior_prompt(names: list[str], description: str, page_index: int, assignment: dict) -> str:
+def interior_prompt(names: list[str], description: str, page_index: int, assignment: dict, scene_brief: str, age: int) -> str:
     indices = assignment["indices"]
     selected = [names[i] for i in indices]
     who = selected[0] if len(selected) == 1 else " and ".join(selected)
     ids = identity_text(names, indices)
-    scene = SCENE_DIRECTIONS[page_index - 1]
     return f"""
 Draw ONE standalone full-page black-and-white coloring-book illustration.
 DETAILED DESCRIPTION:
 {description}
 
 Featured character(s): {who}
-Scene direction for this page: {scene}.
-{ids}
+TARGET AGE: {age} ({age_label(age)})\nAGE-APPROPRIATE ART GUIDANCE: {age_guidance(age)}\n\nCREATIVE PAGE BRIEF:\n{scene_brief}\n\n{ids}
 ENVIRONMENT REQUIREMENT: The setting is mandatory and must be visually substantial. Do NOT create an isolated character-and-creature portrait on an empty backdrop. Show a complete, recognizable environment drawn in line art, using several specific details from the Detailed Description such as rooms, architecture, landscape features, furniture, props, decorations, pathways, structures, or other location-specific elements. The environment should occupy a meaningful portion of the page and make it immediately clear WHERE the scene takes place. Use foreground, middle-ground, and background elements when appropriate.
 
-This page must feel individually illustrated. Use a facial expression, head angle, body pose, camera/viewing angle, and composition that are noticeably different from a repeated stock portrait. Make the action visually clear and use the environment as part of the scene.
+This page must feel individually illustrated. Use a facial expression, head angle, body pose, camera/viewing angle, and composition that are noticeably different from a repeated stock portrait. Make the action visually clear and use the environment as part of the scene. Follow the Creative Page Brief closely so the scene is imaginative and specific rather than generic. Match the amount of visual detail, object count, and overall complexity to the target age.
 
-Coloring-book requirements: black-and-white line art on white paper; bold clean black outlines; large colorable spaces; simple readable forms; minimal tiny detail; no gray shading; no color; no words; no captions; no page number. IMPORTANT: "white paper" means no gray or colored fill; it does NOT mean an empty background. Draw the described environment with black outlines on the white page. Single full-page composition only. Absolutely no grids, contact sheets, montages, comic panels, or multiple scenes within the image. Keep important faces, hands, props, and environmental features away from the extreme edges.
+Coloring-book requirements: black-and-white line art on white paper; bold clean black outlines; large colorable spaces; simple readable forms; minimal tiny detail for young children, with more detail permitted for older children and teens according to the target age; no gray shading; no color; no words; no captions; no page number. IMPORTANT: "white paper" means no gray or colored fill; it does NOT mean an empty background. Draw the described environment with black outlines on the white page. Single full-page composition only. Absolutely no grids, contact sheets, montages, comic panels, or multiple scenes within the image. Keep important faces, hands, props, and environmental features away from the extreme edges.
 {COPYRIGHT_SAFETY}
 """.strip()
 
@@ -331,19 +476,21 @@ def generate_real_job(job_id: str):
     names = job["names"]
     refs = [Path(p) for p in job["reference_paths"]]
     try:
-        set_job(job_id, status="working", progress=3, message="Generating high-quality cover…")
-        cover = openai_edit(refs, cover_prompt(names, job["title"], job["description"]), "high")
+        assignments = page_assignments(names)
+        set_job(job_id, assignments=assignments, status="working", progress=3, message="Planning creative scenes…")
+        scene_plan = plan_scene_briefs(names, job["title"], job["description"], assignments, job["age"])
+        set_job(job_id, scene_plan=scene_plan, progress=8, message="Generating high-quality cover…")
+        cover = openai_edit(refs, cover_prompt(names, job["title"], job["description"], scene_plan["cover_brief"], job["age"]), "high")
         cover_path = job_dir / "cover.png"
         cover.save(cover_path, "PNG")
 
-        assignments = page_assignments(names)
-        set_job(job_id, assignments=assignments)
         for i, assignment in enumerate(assignments, start=1):
-            pct = 8 + int((i - 1) / 8 * 78)
+            pct = 12 + int((i - 1) / 8 * 74)
             actors = [names[x] for x in assignment["indices"]]
             set_job(job_id, progress=pct, message=f"Generating coloring page {i} of 8 — {', '.join(actors)}…")
             selected_refs = [refs[x] for x in assignment["indices"]]
-            img = openai_edit(selected_refs, interior_prompt(names, job["description"], i, assignment), "low")
+            page_brief = scene_plan["pages"][i - 1]["brief"]
+            img = openai_edit(selected_refs, interior_prompt(names, job["description"], i, assignment, page_brief, job["age"]), "low")
             img.save(job_dir / f"page_{i}.png", "PNG", optimize=True)
 
         set_job(job_id, progress=90, message="Building print-ready PDF…")
@@ -379,7 +526,7 @@ def randomized_creative_direction(description: str, names: list[str]) -> str:
     )
 
 
-def manual_prompt_1(names: list[str], title: str, description: str, direction: str) -> str:
+def manual_prompt_1(names: list[str], title: str, description: str, direction: str, age: int) -> str:
     char_lines = []
     for i, name in enumerate(names, start=1):
         char_lines.append(f"Person {i}: {name}\nUse {name}'s uploaded original photo only as {name}'s identity reference.")
@@ -493,14 +640,7 @@ Every page should feel individually illustrated. Deliberately vary facial expres
 
 COLORING-BOOK STYLE
 
-Every interior image must have:
-- black-and-white line art only
-- white paper with a fully drawn environmental line-art setting
-- bold, clean outlines
-- large areas suitable for coloring
-- relatively simple forms
-- minimal tiny detail
-- no grayscale shading
+Every interior image must have:\n- black-and-white line art only\n- white paper with a fully drawn environmental line-art setting\n- bold, clean outlines\n- age-appropriate coloring spaces and complexity\n- relatively simple forms for younger children, with more detail allowed for older children and teens\n- an amount of tiny detail appropriate to the target age\n- no grayscale shading
 - no colored elements
 - no captions
 - no story text
@@ -611,6 +751,7 @@ def config():
     return {
         "api_configured": bool(OPENAI_API_KEY),
         "model": IMAGE_MODEL,
+        "planner_model": TEXT_MODEL,
         "auto_pages": 8,
         "auto_pdf_pages": 12,
         "manual_pdf_pages": 24,
@@ -623,10 +764,13 @@ async def make_manual_prompts(request: Request):
     names = [str(x).strip() for x in body.get("names", []) if str(x).strip()]
     title = str(body.get("title", "")).strip()
     description = str(body.get("description", "")).strip()
+    age = int(body.get("age", 8) or 8)
     if not names or not title or not description:
-        raise HTTPException(400, "Names, title, and a detailed description are required.")
+        raise HTTPException(400, "Names, title, a target age, and a detailed description are required.")
+    if age < 3 or age > 17:
+        raise HTTPException(400, "Target age must be between 3 and 17.")
     direction = randomized_creative_direction(description, names)
-    return {"prompt1": manual_prompt_1(names, title, description, direction), "prompt2": manual_prompt_2(), "creative_direction": direction}
+    return {"prompt1": manual_prompt_1(names, title, description, direction, age), "prompt2": manual_prompt_2(), "creative_direction": direction}
 
 
 @app.post("/api/jobs")
@@ -634,6 +778,7 @@ async def create_job(
     mode: str = Form("demo"),
     title: str = Form(...),
     description: str = Form(...),
+    age: int = Form(...),
     character_names: list[str] = Form(...),
     photos: list[UploadFile] = File(...),
 ):
@@ -642,7 +787,9 @@ async def create_job(
     description = description.strip()
     names = [n.strip() for n in character_names if n.strip()]
     if not title or not description:
-        raise HTTPException(400, "Book title and a detailed description are required.")
+        raise HTTPException(400, "Book title, target age, and a detailed description are required.")
+    if age < 3 or age > 17:
+        raise HTTPException(400, "Target age must be between 3 and 17.")
     if not 1 <= len(names) <= 4:
         raise HTTPException(400, "Add between 1 and 4 people.")
     if len(names) != len(photos):
@@ -676,11 +823,13 @@ async def create_job(
         "mode": mode,
         "title": title,
         "description": description,
+        "age": age,
         "names": names,
         "reference_paths": refs,
         "job_dir": str(job_dir),
         "pdf": None,
         "assignments": page_assignments(names),
+        "scene_plan": None,
     }
     target = generate_demo_job if mode == "demo" else generate_real_job
     threading.Thread(target=target, args=(job_id,), daemon=True).start()
@@ -748,8 +897,10 @@ def retry_page(job_id: str, page_num: int):
     assignment = job["assignments"][page_num - 1]
     refs = [Path(p) for p in job["reference_paths"]]
     selected_refs = [refs[x] for x in assignment["indices"]]
+    scene_plan = job.get("scene_plan") or fallback_scene_plan(job["names"], job["description"], job["assignments"], job["age"])
+    page_brief = scene_plan["pages"][page_num - 1]["brief"]
     try:
-        img = openai_edit(selected_refs, interior_prompt(job["names"], job["description"], page_num, assignment), "medium")
+        img = openai_edit(selected_refs, interior_prompt(job["names"], job["description"], page_num, assignment, page_brief, job["age"]), "medium")
         img.save(Path(job["job_dir"]) / f"page_{page_num}.png", "PNG", optimize=True)
         pdf = build_pdf(Path(job["job_dir"]), job["title"])
         set_job(job_id, status="done", progress=100, message=f"Page {page_num} regenerated at medium quality.", pdf=str(pdf))
