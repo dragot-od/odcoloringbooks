@@ -40,7 +40,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 jobs: dict[str, dict] = {}
 jobs_lock = threading.Lock()
 
-APP_VERSION = "ai-title-no-overlay-v2"
+APP_VERSION = "detailed-description-environments-v4"
 
 COPYRIGHT_SAFETY = (
     "Use only original, generic imagery. Do not include or closely imitate copyrighted characters, "
@@ -60,22 +60,22 @@ DEMO_INTERIORS = [
 ]
 
 SCENE_DIRECTIONS = [
-    "an arrival or first-discovery moment, with the character actively entering the themed setting",
-    "a hands-on fundamentals or learning moment, using a prop naturally related to the theme",
-    "an energetic action scene with clear body movement and a noticeably different camera angle",
-    "a curious close-to-medium view interacting with an interesting feature of the environment",
-    "a skill-practice scene with a focused expression and different stance from earlier pages",
-    "a playful or surprising moment with an expressive reaction and a distinct background",
-    "a teamwork or accomplishment scene that feels warm and celebratory",
-    "a final adventurous scene with a proud or delighted expression and a strong full-page composition",
+    "an establishing scene that clearly shows a distinctive part of the described setting, with the character actively entering, exploring, or reacting to it",
+    "a hands-on activity in a different specific area or sub-setting from the description, using meaningful environmental props and architecture",
+    "an energetic action scene in another visually distinct location, with the surroundings occupying a substantial part of the composition",
+    "a curious discovery scene centered on an interesting room, landscape feature, structure, or environmental detail from the description",
+    "a skill-practice or problem-solving scene in a new part of the setting, with multiple recognizable background objects that establish where the action is happening",
+    "a playful or surprising moment in another distinct environment, using foreground, middle-ground, and background details rather than an empty backdrop",
+    "a teamwork or accomplishment scene that uses the setting itself as part of the action and includes several location-specific visual details",
+    "a final adventurous scene in a memorable area of the described world, with a strong full-page environmental composition and a proud or delighted expression",
 ]
 
 COVER_COMPOSITIONS = [
-    "Use a lively three-quarter composition with the characters in the foreground and the themed world opening behind them. Integrate the title naturally near the top of the composition with clear readable storybook lettering.",
-    "Use a dynamic low-angle storybook composition with the characters caught in an active moment rather than posing. Include a clear readable title near the top, integrated into the cover design.",
-    "Use a warm cinematic wide composition with foreground props framing the characters and a clear themed landmark behind them. Integrate readable title text naturally into the upper part of the cover.",
-    "Use an inviting close-to-medium composition centered on the characters discovering something together, with layered scenery creating depth. Make the upper area suitable for readable integrated title lettering.",
-    "Use an asymmetrical adventure-poster composition with the characters offset from center and a strong environmental feature balancing the scene. Design the upper area so the title can appear clearly as part of the illustration.",
+    "Use a lively three-quarter composition with the characters in the foreground and the themed world opening behind them. Keep the upper scene visually calm enough for decorative title lettering directly over the artwork; no title panel or banner.",
+    "Use a dynamic low-angle storybook composition with the characters caught in an active moment rather than posing. Keep the upper scene visually calm enough for decorative title lettering directly over the artwork; no title panel or banner.",
+    "Use a warm cinematic wide composition with foreground props framing the characters and a clear themed landmark behind them. Keep the upper scene visually calm enough for decorative title lettering directly over the artwork; no title panel or banner.",
+    "Use an inviting close-to-medium composition centered on the characters discovering something together, with layered scenery creating depth. Keep the upper scene visually calm enough for decorative title lettering directly over the artwork; no title panel or banner.",
+    "Use an asymmetrical adventure-poster composition with the characters offset from center and a strong environmental feature balancing the scene. Keep the upper scene visually calm enough for decorative title lettering directly over the artwork; no title panel or banner.",
 ]
 
 MOODS = [
@@ -277,21 +277,32 @@ def openai_edit(reference_paths: list[Path], prompt: str, quality: str) -> Image
     return Image.open(io.BytesIO(base64.b64decode(b64))).convert("RGB")
 
 
-def cover_prompt(names: list[str], title: str, theme: str) -> str:
+def cover_prompt(names: list[str], title: str, description: str) -> str:
     people = ", ".join(names)
     ids = identity_text(names, list(range(len(names))))
     return f"""
 Draw a polished full-color personalized coloring-book COVER illustration.
-Theme: {theme}
+DETAILED DESCRIPTION:
+{description}
+
 Characters who must all appear: {people}
 {ids}
-Render the exact book title "{title}" exactly once, clearly and legibly, integrated naturally into the cover design near the top. Use playful children's-book typography that feels part of the artwork itself. Do NOT place the title inside a plain white rectangular box. Do NOT add any other words, captions, labels, logos, or stray text.
-Create a warm, appealing, original scene that clearly communicates the theme. Use a fresh composition, natural poses, expressive faces, and a family-friendly storybook aesthetic. Keep key faces and bodies safely away from page edges. Single full-page portrait composition only; no panels, grids, contact sheets, borders of mini-scenes, or collage layouts.
+
+TITLE — EXACT TEXT:
+"{title}"
+
+Render that title exactly once as decorative children's-book lettering DIRECTLY OVER THE ILLUSTRATED SCENE near the top of the cover. The title must feel hand-lettered and integrated into the artwork itself. The illustration/background must remain visible immediately behind, around, and between the letters. A subtle outline or drop shadow on the LETTERS is allowed only for readability.
+
+ABSOLUTELY NO TITLE BACKDROP OR CONTAINER. Do not place the title on or inside any box, rectangle, rounded rectangle, white panel, solid panel, banner, ribbon, placard, sign, card, label, frame, speech bubble, cloud shape, plaque, or separate text area. Do not draw any border around the title. Do not reserve a blank white title block. The only title elements should be the letters themselves over the artwork.
+
+Do NOT add any other words, captions, labels, logos, watermarks, or stray text.
+
+Treat the Detailed Description as a visual specification, not merely a loose theme. The cover must clearly show the described world or location through recognizable architecture, scenery, props, objects, and atmosphere. Do not reduce the scene to only the people and supporting creatures. Use a fresh composition, natural poses, expressive faces, and a family-friendly storybook aesthetic. Compose the upper background so it has enough visual simplicity for lettering while still remaining part of the illustrated scene. Keep key faces and bodies safely away from page edges. Single full-page portrait composition only; no panels, grids, contact sheets, borders of mini-scenes, or collage layouts.
 {COPYRIGHT_SAFETY}
 """.strip()
 
 
-def interior_prompt(names: list[str], theme: str, page_index: int, assignment: dict) -> str:
+def interior_prompt(names: list[str], description: str, page_index: int, assignment: dict) -> str:
     indices = assignment["indices"]
     selected = [names[i] for i in indices]
     who = selected[0] if len(selected) == 1 else " and ".join(selected)
@@ -299,12 +310,17 @@ def interior_prompt(names: list[str], theme: str, page_index: int, assignment: d
     scene = SCENE_DIRECTIONS[page_index - 1]
     return f"""
 Draw ONE standalone full-page black-and-white coloring-book illustration.
-Theme: {theme}
+DETAILED DESCRIPTION:
+{description}
+
 Featured character(s): {who}
-Scene direction: {scene}.
+Scene direction for this page: {scene}.
 {ids}
-This page must feel individually illustrated. Use a facial expression, head angle, body pose, camera/viewing angle, and composition that are noticeably different from a repeated stock portrait. Make the action visually clear and appropriate to the theme.
-Coloring-book requirements: pure white background; bold clean black outlines; large colorable spaces; simple readable forms; minimal tiny detail; no gray shading; no color; no words; no captions; no page number. Single full-page composition only. Absolutely no grids, contact sheets, montages, comic panels, or multiple scenes within the image. Keep important faces, hands, and props away from the extreme edges.
+ENVIRONMENT REQUIREMENT: The setting is mandatory and must be visually substantial. Do NOT create an isolated character-and-creature portrait on an empty backdrop. Show a complete, recognizable environment drawn in line art, using several specific details from the Detailed Description such as rooms, architecture, landscape features, furniture, props, decorations, pathways, structures, or other location-specific elements. The environment should occupy a meaningful portion of the page and make it immediately clear WHERE the scene takes place. Use foreground, middle-ground, and background elements when appropriate.
+
+This page must feel individually illustrated. Use a facial expression, head angle, body pose, camera/viewing angle, and composition that are noticeably different from a repeated stock portrait. Make the action visually clear and use the environment as part of the scene.
+
+Coloring-book requirements: black-and-white line art on white paper; bold clean black outlines; large colorable spaces; simple readable forms; minimal tiny detail; no gray shading; no color; no words; no captions; no page number. IMPORTANT: "white paper" means no gray or colored fill; it does NOT mean an empty background. Draw the described environment with black outlines on the white page. Single full-page composition only. Absolutely no grids, contact sheets, montages, comic panels, or multiple scenes within the image. Keep important faces, hands, props, and environmental features away from the extreme edges.
 {COPYRIGHT_SAFETY}
 """.strip()
 
@@ -316,7 +332,7 @@ def generate_real_job(job_id: str):
     refs = [Path(p) for p in job["reference_paths"]]
     try:
         set_job(job_id, status="working", progress=3, message="Generating high-quality cover…")
-        cover = openai_edit(refs, cover_prompt(names, job["title"], job["theme"]), "high")
+        cover = openai_edit(refs, cover_prompt(names, job["title"], job["description"]), "high")
         cover_path = job_dir / "cover.png"
         cover.save(cover_path, "PNG")
 
@@ -327,7 +343,7 @@ def generate_real_job(job_id: str):
             actors = [names[x] for x in assignment["indices"]]
             set_job(job_id, progress=pct, message=f"Generating coloring page {i} of 8 — {', '.join(actors)}…")
             selected_refs = [refs[x] for x in assignment["indices"]]
-            img = openai_edit(selected_refs, interior_prompt(names, job["theme"], i, assignment), "low")
+            img = openai_edit(selected_refs, interior_prompt(names, job["description"], i, assignment), "low")
             img.save(job_dir / f"page_{i}.png", "PNG", optimize=True)
 
         set_job(job_id, progress=90, message="Building print-ready PDF…")
@@ -353,17 +369,17 @@ def generate_demo_job(job_id: str):
         set_job(job_id, status="error", progress=0, message="Demo failed.", error=str(exc))
 
 
-def randomized_creative_direction(theme: str, names: list[str]) -> str:
+def randomized_creative_direction(description: str, names: list[str]) -> str:
     who = names[0] if len(names) == 1 else " and ".join(names)
     return (
-        f"Create a completely new visual approach for {who} within the theme '{theme}'. "
+        f"Create a completely new visual approach for {who} based on this Detailed Description: '{description}'. "
         f"{random.choice(COVER_COMPOSITIONS)} The overall mood should be {random.choice(MOODS)}. "
         f"Across the interior artwork, {random.choice(VIEWPOINTS)}. Deliberately choose different expressions, poses, props, "
         "foreground/background arrangements, and scene compositions from any previous attempt."
     )
 
 
-def manual_prompt_1(names: list[str], title: str, theme: str, direction: str) -> str:
+def manual_prompt_1(names: list[str], title: str, description: str, direction: str) -> str:
     char_lines = []
     for i, name in enumerate(names, start=1):
         char_lines.append(f"Person {i}: {name}\nUse {name}'s uploaded original photo only as {name}'s identity reference.")
@@ -391,7 +407,8 @@ CREATE A COMPLETELY FRESH PERSONALIZED COLORING-BOOK DESIGN.
 
 BOOK DETAILS
 Title: \"{title}\"
-Theme: {theme}
+Detailed Description:
+{description}
 
 CHARACTERS
 
@@ -417,6 +434,21 @@ CREATIVE DIRECTION FOR THIS ATTEMPT
 
 Use this direction as inspiration for a genuinely new design. Do not merely make a small variation of a previous composition.
 
+DETAILED DESCRIPTION / ENVIRONMENT REQUIREMENT
+
+Treat the Detailed Description as a visual specification for the entire book, not merely a loose theme. Use it as the main source for:
+- settings and locations
+- rooms, structures, landscapes, or other sub-settings
+- activities and actions
+- props and important objects
+- mood and atmosphere
+- supporting creatures or characters
+- environmental decorations and visual details
+
+Before creating the artwork, plan a varied sequence of scenes so the book explores different locations, rooms, areas, activities, and visual details described by the user. Spread these throughout the beginning, middle, and end of the book.
+
+Every interior page must clearly show WHERE the action is happening. Do not create pages that only show the person and a creature/object against an empty or generic background. Each page should include a meaningful environmental setting with multiple recognizable location-specific details. Use foreground, middle-ground, and background elements when appropriate.
+
 ARTWORK TO CREATE
 
 Create exactly:
@@ -427,7 +459,7 @@ These are artwork assets only. DO NOT create the PDF yet. I will review the artw
 
 COVER
 
-Create one full-color cover featuring all listed characters together in an original scene appropriate to the theme.
+Create one full-color cover featuring all listed characters together in an original scene that clearly depicts the Detailed Description.
 
 The cover must contain the exact title:
 \"{title}\"
@@ -436,7 +468,7 @@ Keep every person recognizable from their own uploaded original photograph. Use 
 
 20 COLORING PAGES
 
-Create 20 different scenes related to the theme: {theme}
+Create 20 different scenes based on the Detailed Description above.
 
 Every coloring page must be its OWN SEPARATE, STANDALONE IMAGE.
 
@@ -463,7 +495,7 @@ COLORING-BOOK STYLE
 
 Every interior image must have:
 - black-and-white line art only
-- pure white background
+- white paper with a fully drawn environmental line-art setting
 - bold, clean outlines
 - large areas suitable for coloring
 - relatively simple forms
@@ -473,6 +505,7 @@ Every interior image must have:
 - no captions
 - no story text
 - no page numbers
+- no empty or generic backgrounds; each page must visibly establish its location with setting details from the Detailed Description
 
 PAGE COMPOSITION
 
@@ -480,7 +513,7 @@ Compose every cover and coloring page vertically for a US Letter portrait page w
 
 COPYRIGHT SAFETY
 
-Use only original, generic imagery appropriate to the theme. Do not include copyrighted characters, recognizable franchise designs, logos, branded costumes, professional team logos, trademarked mascot designs, or direct recreations of copyrighted artwork.
+Use only original, generic imagery appropriate to the Detailed Description. Do not include copyrighted characters, recognizable franchise designs, logos, branded costumes, professional team logos, trademarked mascot designs, or direct recreations of copyrighted artwork.
 
 FINAL INSTRUCTION
 
@@ -589,27 +622,27 @@ async def make_manual_prompts(request: Request):
     body = await request.json()
     names = [str(x).strip() for x in body.get("names", []) if str(x).strip()]
     title = str(body.get("title", "")).strip()
-    theme = str(body.get("theme", "")).strip()
-    if not names or not title or not theme:
-        raise HTTPException(400, "Names, title, and theme are required.")
-    direction = randomized_creative_direction(theme, names)
-    return {"prompt1": manual_prompt_1(names, title, theme, direction), "prompt2": manual_prompt_2(), "creative_direction": direction}
+    description = str(body.get("description", "")).strip()
+    if not names or not title or not description:
+        raise HTTPException(400, "Names, title, and a detailed description are required.")
+    direction = randomized_creative_direction(description, names)
+    return {"prompt1": manual_prompt_1(names, title, description, direction), "prompt2": manual_prompt_2(), "creative_direction": direction}
 
 
 @app.post("/api/jobs")
 async def create_job(
     mode: str = Form("demo"),
     title: str = Form(...),
-    theme: str = Form(...),
+    description: str = Form(...),
     character_names: list[str] = Form(...),
     photos: list[UploadFile] = File(...),
 ):
     cleanup_old_jobs()
     title = title.strip()
-    theme = theme.strip()
+    description = description.strip()
     names = [n.strip() for n in character_names if n.strip()]
-    if not title or not theme:
-        raise HTTPException(400, "Book title and theme are required.")
+    if not title or not description:
+        raise HTTPException(400, "Book title and a detailed description are required.")
     if not 1 <= len(names) <= 4:
         raise HTTPException(400, "Add between 1 and 4 people.")
     if len(names) != len(photos):
@@ -642,7 +675,7 @@ async def create_job(
         "message": "Starting…",
         "mode": mode,
         "title": title,
-        "theme": theme,
+        "description": description,
         "names": names,
         "reference_paths": refs,
         "job_dir": str(job_dir),
@@ -716,7 +749,7 @@ def retry_page(job_id: str, page_num: int):
     refs = [Path(p) for p in job["reference_paths"]]
     selected_refs = [refs[x] for x in assignment["indices"]]
     try:
-        img = openai_edit(selected_refs, interior_prompt(job["names"], job["theme"], page_num, assignment), "medium")
+        img = openai_edit(selected_refs, interior_prompt(job["names"], job["description"], page_num, assignment), "medium")
         img.save(Path(job["job_dir"]) / f"page_{page_num}.png", "PNG", optimize=True)
         pdf = build_pdf(Path(job["job_dir"]), job["title"])
         set_job(job_id, status="done", progress=100, message=f"Page {page_num} regenerated at medium quality.", pdf=str(pdf))
