@@ -40,6 +40,8 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 jobs: dict[str, dict] = {}
 jobs_lock = threading.Lock()
 
+APP_VERSION = "ai-title-no-overlay-v2"
+
 COPYRIGHT_SAFETY = (
     "Use only original, generic imagery. Do not include or closely imitate copyrighted characters, "
     "recognizable franchise designs, team logos, branded costumes, company logos, trademarked mascots, "
@@ -189,29 +191,6 @@ def wrap_text(draw: ImageDraw.ImageDraw, text: str, fnt, max_width: int) -> list
     if current:
         lines.append(current)
     return lines
-
-
-def add_cover_title(image_path: Path, title: str):
-    im = Image.open(image_path).convert("RGB")
-    draw = ImageDraw.Draw(im)
-    max_width = int(im.width * 0.84)
-    title_font = font(max(44, int(im.width * 0.07)), bold=True)
-    lines = wrap_text(draw, title, title_font, max_width)
-    line_h = int(title_font.size * 1.12) if hasattr(title_font, "size") else 64
-    total_h = line_h * len(lines)
-    y = max(36, int(im.height * 0.055))
-    pad = 22
-    # subtle light panel for guaranteed legibility
-    widest = max(draw.textbbox((0, 0), line, font=title_font)[2] for line in lines)
-    x0 = (im.width - widest) // 2 - pad
-    x1 = (im.width + widest) // 2 + pad
-    draw.rounded_rectangle((x0, y-pad, x1, y+total_h+pad), radius=18, fill=(255,255,255,225), outline=(0,0,0), width=3)
-    for line in lines:
-        box = draw.textbbox((0, 0), line, font=title_font)
-        x = (im.width - (box[2] - box[0])) // 2
-        draw.text((x, y), line, font=title_font, fill="black")
-        y += line_h
-    im.save(image_path, "PNG", optimize=True)
 
 
 def build_pdf(job_dir: Path, title: str) -> Path:
