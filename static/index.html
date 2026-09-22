@@ -1,1 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Personalized Coloring Book Demo</title>
+<style>
+:root{--ink:#20242f;--muted:#687184;--line:#dce2ec;--bg:#f5f7fb;--card:#fff;--accent:#5b5bd6;--green:#0c8f68;--warn:#9b6b00}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#f0efff 0,#f7f8fb 310px);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}.wrap{max-width:1060px;margin:auto;padding:40px 18px 80px}.hero{margin-bottom:26px}.eyebrow{font-size:12px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;color:var(--accent)}h1{font-size:clamp(38px,7vw,68px);line-height:1;margin:7px 0 13px;letter-spacing:-.045em}.hero p{max-width:760px;color:var(--muted);font-size:17px;line-height:1.55}.card{background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:0 14px 40px rgba(28,37,57,.07);margin-top:18px}.card h2{margin:0 0 6px;font-size:22px}.sub{color:var(--muted);font-size:14px;line-height:1.5;margin:0 0 18px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.full{grid-column:1/-1}.field{display:flex;flex-direction:column;gap:7px}label{font-size:13px;font-weight:850}input,textarea{width:100%;padding:12px 13px;border:1px solid #cbd3e1;border-radius:12px;font:inherit;color:var(--ink);background:#fff;outline:none}input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,91,214,.1)}textarea{min-height:82px;resize:vertical}.characters{display:grid;gap:12px}.person{display:grid;grid-template-columns:1fr 1.2fr auto;gap:10px;align-items:end;border:1px solid var(--line);border-radius:15px;padding:13px;background:#fafbfe}.person .remove{background:#fff;color:#8a2c2c;border:1px solid #e4baba;box-shadow:none;padding:11px 12px}.btn{border:0;border-radius:12px;padding:13px 18px;font:inherit;font-weight:850;cursor:pointer;background:var(--accent);color:white;box-shadow:0 8px 20px rgba(91,91,214,.2)}.btn.secondary{background:white;color:var(--ink);border:1px solid var(--line);box-shadow:none}.btn.green{background:var(--green)}.btn.small{font-size:13px;padding:9px 12px}.btn:disabled{opacity:.55;cursor:not-allowed}.row{display:flex;gap:11px;align-items:center;flex-wrap:wrap}.modebox{border:1px solid var(--line);background:#fafbff;padding:13px 15px;border-radius:14px;margin-top:15px;display:flex;gap:10px;align-items:flex-start}.modebox input{width:auto;margin-top:3px}.modebox strong{display:block}.modebox span{display:block;color:var(--muted);font-size:13px;margin-top:2px;line-height:1.4}.note{font-size:13px;color:var(--muted);line-height:1.5;padding:12px 14px;background:#f7f8fb;border-radius:12px;margin-top:14px}.actions{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap}.error{display:none;background:#fff1f0;color:#a42118;border:1px solid #ffc9c5;padding:12px;border-radius:12px;margin-top:12px}.progress{display:none;margin-top:20px}.track{height:12px;background:#e7ebf2;border-radius:999px;overflow:hidden}.track i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),#25a77b);transition:width .3s}.status{display:flex;justify-content:space-between;margin-top:8px;font-size:14px}.gallery{display:none;margin-top:20px}.gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.art{border:1px solid var(--line);border-radius:15px;padding:10px;background:#fff}.art img{display:block;width:100%;aspect-ratio:8.5/11;object-fit:contain;background:#fff;border-radius:9px;border:1px solid #eceff4}.art-head{display:flex;justify-content:space-between;gap:8px;align-items:center;margin:9px 0 7px;font-size:13px}.badge{font-size:11px;color:#586074;background:#f1f3f7;border-radius:99px;padding:4px 7px}.manual{display:grid;grid-template-columns:1fr 1fr;gap:14px}.promptbox{border:1px solid var(--line);border-radius:15px;padding:15px;background:#fbfcff}.promptbox h3{margin:0 0 6px}.promptbox p{font-size:13px;color:var(--muted);line-height:1.45}.promptbox textarea{height:250px;font-size:12px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.fresh{background:#fff8df;border:1px solid #efdda1;color:#6b5310;border-radius:12px;padding:11px 13px;font-size:13px;line-height:1.5;margin-bottom:12px}.footer{font-size:12px;color:#81899a;margin-top:18px;line-height:1.55}
+@media(max-width:760px){.grid,.manual{grid-template-columns:1fr}.full{grid-column:auto}.person{grid-template-columns:1fr}.gallery-grid{grid-template-columns:1fr 1fr}.wrap{padding-top:25px}}
+@media(max-width:480px){.gallery-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+    <div class="eyebrow">Corporate concept demo</div>
+    <h1>Personalized Coloring Book Studio</h1>
+    <p>Upload one or more people, enter a title and theme, and create a small AI-generated demo book. Or copy the full 24-page ChatGPT workflow for a manual test.</p>
+  </section>
 
+  <section class="card">
+    <h2>Create a demo book</h2>
+    <p class="sub">Automatic mode creates a high-quality color cover plus 8 low-quality coloring pages. Any weak interior page can be retried individually at medium quality.</p>
+    <form id="bookForm">
+      <div class="grid">
+        <div class="field"><label>Book title</label><input id="title" value="Willy Meets Bigfoot" required /></div>
+        <div class="field"><label>Theme</label><input id="theme" value="Whimsical meeting in the forest with a friendly Bigfoot" required /></div>
+        <div class="field full">
+          <label>Characters</label>
+          <div id="characters" class="characters"></div>
+          <div style="margin-top:10px"><button type="button" class="btn secondary small" id="addPerson">+ Add Another Person</button></div>
+        </div>
+      </div>
+      <div class="modebox">
+        <input type="checkbox" id="demoMode" checked />
+        <div><strong>Demo Mode — free</strong><span>Uses pre-generated sample artwork and makes no OpenAI API calls. Turn this off when you want to test real generation.</span></div>
+      </div>
+      <div class="note">Automatic PDF layout: cover · blank page · 8 coloring pages · 2 blank pages = <b>12 true US Letter pages</b>. Blank pages are added locally and cost nothing.</div>
+      <div class="actions"><button class="btn" id="generate" type="submit">Generate Book Automatically</button></div>
+      <div class="error" id="error"></div>
+    </form>
+
+    <div class="progress" id="progress">
+      <div class="track"><i id="bar"></i></div>
+      <div class="status"><span id="message">Starting…</span><b id="pct">0%</b></div>
+    </div>
+
+    <div class="gallery" id="gallery">
+      <div class="row" style="justify-content:space-between;margin-bottom:12px"><div><b>Review generated artwork</b><div class="sub" style="margin:3px 0 0">Retry only the interior pages that need improvement.</div></div><a class="btn green" id="download" href="#">Download Print-Ready PDF</a></div>
+      <div class="gallery-grid" id="galleryGrid"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Manual ChatGPT fallback</h2>
+    <p class="sub">This does not use your website API credit. The website builds two prompts from the same title, theme and characters above.</p>
+    <div class="fresh"><b>Fresh redesign rule:</b> every new artwork attempt should start in a brand-new ChatGPT conversation. Re-upload only the original source photos, then paste a newly generated Prompt 1. Do not reuse old AI artwork as a reference.</div>
+    <div class="actions" style="margin-top:0;margin-bottom:14px"><button class="btn secondary" id="makePrompts" type="button">Generate ChatGPT Prompts</button><button class="btn secondary" id="differentPrompt" type="button">Generate Different Artwork Prompt</button></div>
+    <div class="manual">
+      <div class="promptbox">
+        <h3>Prompt 1 — Create artwork</h3>
+        <p>Start a NEW ChatGPT conversation, upload the original source photo(s), then paste this prompt. It creates 1 cover + 20 individual coloring pages and stops for review.</p>
+        <textarea id="prompt1" readonly placeholder="Click Generate ChatGPT Prompts"></textarea>
+        <div class="actions"><button class="btn small" type="button" data-copy="prompt1">Copy Artwork Prompt</button></div>
+      </div>
+      <div class="promptbox">
+        <h3>Prompt 2 — Build PDF</h3>
+        <p>When the artwork is approved, paste this into the SAME ChatGPT conversation. It creates the 24-page print-ready PDF.</p>
+        <textarea id="prompt2" readonly placeholder="Click Generate ChatGPT Prompts"></textarea>
+        <div class="actions"><button class="btn small" type="button" data-copy="prompt2">Copy PDF Prompt</button></div>
+      </div>
+    </div>
+    <div class="footer">Manual 24-page structure: page 1 cover · page 2 blank · pages 3–22 twenty individual coloring pages · pages 23–24 blank. Prompt 2 requires true 8.5 × 11 inch PDF pages.</div>
+  </section>
+</div>
+<script>
+const chars=document.getElementById('characters');
+const addPerson=document.getElementById('addPerson');
+const form=document.getElementById('bookForm');
+const demoMode=document.getElementById('demoMode');
+const error=document.getElementById('error');
+const progress=document.getElementById('progress');
+const bar=document.getElementById('bar');
+const pct=document.getElementById('pct');
+const message=document.getElementById('message');
+const gallery=document.getElementById('gallery');
+const galleryGrid=document.getElementById('galleryGrid');
+const download=document.getElementById('download');
+const generate=document.getElementById('generate');
+let currentJob=null;
+let apiConfigured=false;
+
+function addCharacter(name=''){
+  if(chars.children.length>=4)return;
+  const idx=chars.children.length+1;
+  const div=document.createElement('div'); div.className='person';
+  div.innerHTML=`<div class="field"><label>Person ${idx} name</label><input class="pname" value="${name}" placeholder="Name" required></div><div class="field"><label>Person ${idx} photo</label><input class="pphoto" type="file" accept="image/*" required></div><button type="button" class="btn remove">Remove</button>`;
+  div.querySelector('.remove').onclick=()=>{if(chars.children.length>1){div.remove();renumber();}};
+  chars.appendChild(div); renumber();
+}
+function renumber(){[...chars.children].forEach((el,i)=>{el.querySelector('label').textContent=`Person ${i+1} name`;el.querySelectorAll('label')[1].textContent=`Person ${i+1} photo`;el.querySelector('.remove').style.display=chars.children.length===1?'none':'block';});addPerson.disabled=chars.children.length>=4;}
+addPerson.onclick=()=>addCharacter('');
+addCharacter('Willy');
+
+fetch('/api/config').then(r=>r.json()).then(c=>{apiConfigured=c.api_configured;if(!apiConfigured){demoMode.checked=true;}}).catch(()=>{});
+
+function showError(msg){error.textContent=msg;error.style.display='block';}
+function formDataForBook(){
+  const fd=new FormData(); fd.append('mode',demoMode.checked?'demo':'real');fd.append('title',document.getElementById('title').value.trim());fd.append('theme',document.getElementById('theme').value.trim());
+  [...chars.children].forEach(el=>{fd.append('character_names',el.querySelector('.pname').value.trim());const f=el.querySelector('.pphoto').files[0];if(f)fd.append('photos',f);});return fd;
+}
+function readFields(){return {title:document.getElementById('title').value.trim(),theme:document.getElementById('theme').value.trim(),names:[...chars.querySelectorAll('.pname')].map(x=>x.value.trim()).filter(Boolean)};}
+function validate(needPhotos=true){const f=readFields();if(!f.title||!f.theme||!f.names.length){showError('Enter a title, theme, and at least one person.');return false;}if(needPhotos){for(const el of chars.children){if(!el.querySelector('.pphoto').files[0]){showError('Every person needs an uploaded photo.');return false;}}}return true;}
+
+form.onsubmit=async e=>{
+  e.preventDefault();error.style.display='none';gallery.style.display='none';
+  if(!validate(true))return;if(!demoMode.checked&&!apiConfigured){showError('Real generation needs OPENAI_API_KEY configured on Render. Demo Mode still works.');return;}
+  generate.disabled=true;progress.style.display='block';bar.style.width='2%';pct.textContent='2%';message.textContent='Uploading…';
+  try{const r=await fetch('/api/jobs',{method:'POST',body:formDataForBook()});const j=await r.json();if(!r.ok)throw new Error(j.detail||'Could not start generation');currentJob=j.id;poll(j.id);}catch(err){showError(err.message);generate.disabled=false;}
+};
+async function poll(id){
+  try{const r=await fetch('/api/jobs/'+id);const j=await r.json();if(!r.ok)throw new Error(j.detail||'Status error');bar.style.width=(j.progress||0)+'%';pct.textContent=(j.progress||0)+'%';message.textContent=j.message||'Working…';if(j.status==='done'){generate.disabled=false;renderGallery(j);return;}if(j.status==='error')throw new Error(j.error||'Generation failed');setTimeout(()=>poll(id),1300);}catch(err){showError(err.message);generate.disabled=false;}
+}
+function renderGallery(j){galleryGrid.innerHTML='';download.href=j.download;gallery.style.display='block';j.images.forEach(item=>{const div=document.createElement('div');div.className='art';const bust=Date.now();div.innerHTML=`<img src="${item.url}?v=${bust}" alt="${item.label}"><div class="art-head"><b>${item.label}</b><span class="badge">${item.quality}</span></div>${item.retry?`<button type="button" class="btn secondary small retry">Retry Medium</button>`:''}`;if(item.retry){div.querySelector('.retry').onclick=()=>retry(item,div);}galleryGrid.appendChild(div);});gallery.scrollIntoView({behavior:'smooth',block:'start'});}
+async function retry(item,card){const btn=card.querySelector('.retry');btn.disabled=true;btn.textContent='Regenerating…';try{const page=item.label.match(/\d+/)[0];const r=await fetch(`/api/jobs/${currentJob}/retry/${page}`,{method:'POST'});const j=await r.json();if(!r.ok)throw new Error(j.detail||'Retry failed');card.querySelector('img').src=item.url+'?v='+Date.now();card.querySelector('.badge').textContent=demoMode.checked?'Demo':'Medium';btn.textContent='Retry Medium';download.href=`/api/jobs/${currentJob}/download?v=${Date.now()}`;message.textContent=j.message||'Page updated.';}catch(err){showError(err.message);btn.textContent='Retry Medium';}finally{btn.disabled=false;}}
+
+async function generatePrompts(){error.style.display='none';if(!validate(false))return;const f=readFields();try{const r=await fetch('/api/manual-prompts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(f)});const j=await r.json();if(!r.ok)throw new Error(j.detail||'Could not generate prompts');document.getElementById('prompt1').value=j.prompt1;document.getElementById('prompt2').value=j.prompt2;}catch(err){showError(err.message);}}
+document.getElementById('makePrompts').onclick=generatePrompts;document.getElementById('differentPrompt').onclick=generatePrompts;
+document.querySelectorAll('[data-copy]').forEach(btn=>btn.onclick=async()=>{const id=btn.dataset.copy;const value=document.getElementById(id).value;if(!value){showError('Generate the prompts first.');return;}await navigator.clipboard.writeText(value);const old=btn.textContent;btn.textContent='Copied!';setTimeout(()=>btn.textContent=old,1200);});
+</script>
+</body>
+</html>
