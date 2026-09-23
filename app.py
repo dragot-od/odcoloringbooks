@@ -40,7 +40,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 jobs: dict[str, dict] = {}
 jobs_lock = threading.Lock()
 
-APP_VERSION = "three-section-pure-demo-v8.0"
+APP_VERSION = "three-section-pure-demo-v8.1"
 TEXT_MODEL = os.getenv("TEXT_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini"
 
 COPYRIGHT_SAFETY = (
@@ -564,18 +564,50 @@ def generate_real_job(job_id: str):
         set_job(job_id, status="error", progress=0, message="Generation stopped.", error=str(exc))
 
 
+def build_preset_demo_pdf(preset_key: str, job_dir: Path) -> Path:
+    preset = DEMO_PRESETS[preset_key]
+    source_dir = DEMO_PRESETS_DIR / preset_key
+    output = job_dir / f"{safe_slug(preset['title'])}_demo.pdf"
+    c = canvas.Canvas(str(output), pagesize=letter)
+    pw, ph = letter
+
+    ordered: list[Optional[Path]] = [source_dir / "cover.jpg", None]
+    ordered += [source_dir / f"page_{i}.jpg" for i in range(1, preset["interior_pages"] + 1)]
+    ordered += [None, None]
+
+    expected = preset["pdf_pages"]
+    if len(ordered) != expected:
+        raise RuntimeError(f"Demo page plan has {len(ordered)} pages but preset expects {expected}.")
+
+    for path in ordered:
+        if path is not None:
+            if not path.exists():
+                raise RuntimeError(f"Missing demo asset: {path.name}")
+            with Image.open(path) as im:
+                iw, ih = im.size
+            scale = min(pw / iw, ph / ih)
+            w, h = iw * scale, ih * scale
+            x, y = (pw - w) / 2, (ph - h) / 2
+            c.drawImage(ImageReader(str(path)), x, y, width=w, height=h, preserveAspectRatio=True, mask="auto")
+        c.showPage()
+    c.save()
+    return output
+
+
 def generate_preset_demo_job(job_id: str):
     job = get_job(job_id)
     preset = DEMO_PRESETS[job["preset"]]
+    job_dir = Path(job["job_dir"])
     try:
         total = preset["interior_pages"]
         set_job(job_id, status="working", progress=5, message="Loading pre-generated demo artwork - no API calls...")
         time.sleep(0.15)
         for i in range(1, total + 1):
-            progress = 8 + int(i / total * 82)
+            progress = 8 + int(i / total * 78)
             set_job(job_id, progress=progress, message=f"Preparing demo page {i} of {total}...")
             time.sleep(0.05)
-        pdf = DEMO_PRESETS_DIR / job["preset"] / "book.pdf"
+        set_job(job_id, progress=90, message=f"Building {preset['pdf_pages']}-page demo PDF...")
+        pdf = build_preset_demo_pdf(job["preset"], job_dir)
         set_job(job_id, status="done", progress=100, message=f"{preset['label']} demo ready. No API credit used.", pdf=str(pdf))
     except Exception as exc:
         set_job(job_id, status="error", progress=0, message="Demo failed.", error=str(exc))
@@ -857,6 +889,8 @@ async def create_demo_job(request: Request):
         raise HTTPException(400, "Choose a valid demo preset.")
     preset = DEMO_PRESETS[preset_key]
     job_id = uuid.uuid4().hex[:12]
+    job_dir = JOBS_DIR / job_id
+    job_dir.mkdir(parents=True, exist_ok=True)
     jobs[job_id] = {
         "id": job_id,
         "created": time.time(),
@@ -866,6 +900,7 @@ async def create_demo_job(request: Request):
         "kind": "preset_demo",
         "preset": preset_key,
         "title": preset["title"],
+        "job_dir": str(job_dir),
         "pdf": None,
     }
     threading.Thread(target=generate_preset_demo_job, args=(job_id,), daemon=True).start()
