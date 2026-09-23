@@ -26,7 +26,7 @@ load_dotenv()
 ROOT = Path(__file__).resolve().parent
 STATIC_DIR = ROOT / "static"
 JOBS_DIR = ROOT / "jobs"
-DEMO_ASSETS = ROOT / "demo_assets"
+DEMO_PRESETS_DIR = ROOT / "demo_presets"
 JOBS_DIR.mkdir(exist_ok=True)
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
@@ -40,7 +40,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 jobs: dict[str, dict] = {}
 jobs_lock = threading.Lock()
 
-APP_VERSION = "blank-form-v7.3"
+APP_VERSION = "three-section-pure-demo-v8.0"
 TEXT_MODEL = os.getenv("TEXT_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini"
 
 COPYRIGHT_SAFETY = (
@@ -49,16 +49,45 @@ COPYRIGHT_SAFETY = (
     "or other protected fictional designs."
 )
 
-DEMO_INTERIORS = [
-    "waving_astronaut_on_the_moon.png",
-    "smiling_astronaut_rover_adventure.png",
-    "mustached_astronaut_s_rocket_adventure.png",
-    "cheerful_spacewalk_over_earth.png",
-    "astronaut_and_alien_moon_adventure.png",
-    "jovial_astronaut_floating_among_stars.png",
-    "guitar_playing_astronaut_on_an_asteroid.png",
-    "moon_mission_with_a_happy_space_dog.png",
-]
+DEMO_PRESETS = {
+    "dinosaurs": {
+        "label": "Dinosaurs",
+        "title": "Hendrix and the Dinosaur Kingdom",
+        "name": "Hendrix",
+        "age": 6,
+        "description": "Hendrix enters a magical dinosaur kingdom where he meets many different dinosaurs. Some appear in natural prehistoric environments, while others become friendly characters interacting with Hendrix in everyday settings like a kitchen, classroom, library, greenhouse, workshop, music room, playground, boat, soccer field, and post office. Keep it playful, adventurous, educational, and age-appropriate.",
+        "interior_pages": 20,
+        "pdf_pages": 24,
+    },
+    "superhero": {
+        "label": "Superhero",
+        "title": "Adam Jr Saves the Day",
+        "name": "Adam Jr",
+        "age": 12,
+        "description": "Adam Jr becomes a young superhero and races across the city with a masked partner, stopping robots and quirky villains in places like subway stations, rooftops, markets, bridges, museums, parks, waterfronts, and other city locations. Keep it energetic, adventurous, heroic, and comic-book inspired while using original generic characters and designs.",
+        "interior_pages": 20,
+        "pdf_pages": 24,
+    },
+    "pyramids": {
+        "label": "Pyramids",
+        "title": "Willy Explores the Pyramids",
+        "name": "Willy",
+        "age": 8,
+        "description": "Willy explores ancient Egypt on an adventurous trip through the pyramids and temples. Show desert landscapes, pyramid interiors, hieroglyphs, torch-lit passages, treasure, camels, the Sphinx, ancient ruins, scrolls, tombs, the Nile, and other Egyptian landmarks and discoveries. Keep it adventurous, educational, and family-friendly.",
+        "interior_pages": 20,
+        "pdf_pages": 24,
+    },
+    "petting_zoo": {
+        "label": "Petting Zoo",
+        "title": "Erik at the Petting Zoo",
+        "name": "Erik",
+        "age": 3,
+        "description": "Erik visits a cheerful petting zoo and meets friendly animals in very simple preschool scenes. Show him feeding a goat, petting a sheep, brushing a rabbit, feeding a duck, greeting an alpaca, giving a pig a snack, feeding a horse, and meeting a colorful parrot. Use extra-simple shapes, thick outlines, large open coloring areas, minimal background detail, and a warm friendly mood.",
+        "interior_pages": 8,
+        "pdf_pages": 12,
+    },
+}
+
 
 SCENE_DIRECTIONS = [
     "an establishing scene that clearly shows a distinctive part of the described setting, with the character actively entering, exploring, or reacting to it",
@@ -418,7 +447,7 @@ Return JSON only in this exact structure:
 
 def openai_edit(reference_paths: list[Path], prompt: str, quality: str) -> Image.Image:
     if not OPENAI_API_KEY:
-        raise RuntimeError("OPENAI_API_KEY is not configured. Use Demo Mode or add the key in Render.")
+        raise RuntimeError("OPENAI_API_KEY is not configured. Add the key in Render.")
 
     url = "https://api.openai.com/v1/images/edits"
     headers = {"Authorization": f"Bearer {OPENAI_API_KEY}"}
@@ -535,18 +564,19 @@ def generate_real_job(job_id: str):
         set_job(job_id, status="error", progress=0, message="Generation stopped.", error=str(exc))
 
 
-def generate_demo_job(job_id: str):
+def generate_preset_demo_job(job_id: str):
     job = get_job(job_id)
-    job_dir = Path(job["job_dir"])
+    preset = DEMO_PRESETS[job["preset"]]
     try:
-        set_job(job_id, status="working", progress=10, message="Loading pre-generated demo artwork — no API calls…")
-        shutil.copy2(DEMO_ASSETS / "cover.png", job_dir / "cover.png")
-        for i, filename in enumerate(DEMO_INTERIORS, start=1):
-            shutil.copy2(DEMO_ASSETS / filename, job_dir / f"page_{i}.png")
-            set_job(job_id, progress=10 + i * 9, message=f"Preparing demo page {i} of 8…")
-            time.sleep(0.08)
-        pdf = build_pdf(job_dir, job["title"])
-        set_job(job_id, status="done", progress=100, message="Demo book ready. No API credit used.", pdf=str(pdf))
+        total = preset["interior_pages"]
+        set_job(job_id, status="working", progress=5, message="Loading pre-generated demo artwork - no API calls...")
+        time.sleep(0.15)
+        for i in range(1, total + 1):
+            progress = 8 + int(i / total * 82)
+            set_job(job_id, progress=progress, message=f"Preparing demo page {i} of {total}...")
+            time.sleep(0.05)
+        pdf = DEMO_PRESETS_DIR / job["preset"] / "book.pdf"
+        set_job(job_id, status="done", progress=100, message=f"{preset['label']} demo ready. No API credit used.", pdf=str(pdf))
     except Exception as exc:
         set_job(job_id, status="error", progress=0, message="Demo failed.", error=str(exc))
 
@@ -795,10 +825,51 @@ def config():
         "api_configured": bool(OPENAI_API_KEY),
         "model": IMAGE_MODEL,
         "planner_model": TEXT_MODEL,
-        "auto_pages": 8,
-        "auto_pdf_pages": 12,
+        "live_pages": 8,
+        "live_pdf_pages": 12,
         "manual_pdf_pages": 24,
+        "version": APP_VERSION,
     }
+
+
+@app.get("/api/demo-presets")
+def demo_presets():
+    return {
+        key: {
+            "label": value["label"],
+            "title": value["title"],
+            "name": value["name"],
+            "age": value["age"],
+            "description": value["description"],
+            "interior_pages": value["interior_pages"],
+            "pdf_pages": value["pdf_pages"],
+        }
+        for key, value in DEMO_PRESETS.items()
+    }
+
+
+@app.post("/api/demo-jobs")
+async def create_demo_job(request: Request):
+    cleanup_old_jobs()
+    body = await request.json()
+    preset_key = str(body.get("preset", "")).strip()
+    if preset_key not in DEMO_PRESETS:
+        raise HTTPException(400, "Choose a valid demo preset.")
+    preset = DEMO_PRESETS[preset_key]
+    job_id = uuid.uuid4().hex[:12]
+    jobs[job_id] = {
+        "id": job_id,
+        "created": time.time(),
+        "status": "queued",
+        "progress": 1,
+        "message": "Starting demo...",
+        "kind": "preset_demo",
+        "preset": preset_key,
+        "title": preset["title"],
+        "pdf": None,
+    }
+    threading.Thread(target=generate_preset_demo_job, args=(job_id,), daemon=True).start()
+    return {"id": job_id}
 
 
 @app.post("/api/manual-prompts")
@@ -818,12 +889,11 @@ async def make_manual_prompts(request: Request):
 
 @app.post("/api/jobs")
 async def create_job(
-    mode: str = Form("demo"),
     title: str = Form(...),
     description: str = Form(...),
     age: int = Form(...),
     character_names: list[str] = Form(...),
-    photos: Optional[list[UploadFile]] = File(None),
+    photos: list[UploadFile] = File(...),
 ):
     cleanup_old_jobs()
     title = title.strip()
@@ -835,37 +905,34 @@ async def create_job(
         raise HTTPException(400, "Target age must be between 3 and 17.")
     if not 1 <= len(names) <= 4:
         raise HTTPException(400, "Add between 1 and 4 people.")
-    clean_photos = [p for p in (photos or []) if p and getattr(p, "filename", "")]
-    if mode == "real" and len(names) != len(clean_photos):
-        raise HTTPException(400, "Every person needs exactly one photo for real generation.")
-    if mode == "real" and not OPENAI_API_KEY:
-        raise HTTPException(400, "Real generation is not available until OPENAI_API_KEY is configured.")
-    if mode not in {"demo", "real"}:
-        raise HTTPException(400, "Invalid generation mode.")
+    clean_photos = [p for p in photos if p and getattr(p, "filename", "")]
+    if len(names) != len(clean_photos):
+        raise HTTPException(400, "Every person needs exactly one photo.")
+    if not OPENAI_API_KEY:
+        raise HTTPException(400, "Live generation is not available until OPENAI_API_KEY is configured.")
 
     job_id = uuid.uuid4().hex[:12]
     job_dir = JOBS_DIR / job_id
     job_dir.mkdir(parents=True)
     refs = []
-    if mode == "real":
-        try:
-            for i, upload in enumerate(clean_photos, start=1):
-                data = await upload.read()
-                image = read_and_normalize_upload(data)
-                ref = job_dir / f"reference_{i}.jpg"
-                save_reference(image, ref)
-                refs.append(str(ref))
-        except ValueError as exc:
-            shutil.rmtree(job_dir, ignore_errors=True)
-            raise HTTPException(400, str(exc))
+    try:
+        for i, upload in enumerate(clean_photos, start=1):
+            data = await upload.read()
+            image = read_and_normalize_upload(data)
+            ref = job_dir / f"reference_{i}.jpg"
+            save_reference(image, ref)
+            refs.append(str(ref))
+    except ValueError as exc:
+        shutil.rmtree(job_dir, ignore_errors=True)
+        raise HTTPException(400, str(exc))
 
     jobs[job_id] = {
         "id": job_id,
         "created": time.time(),
         "status": "queued",
         "progress": 1,
-        "message": "Starting…",
-        "mode": mode,
+        "message": "Starting...",
+        "kind": "live",
         "title": title,
         "description": description,
         "age": age,
@@ -876,8 +943,7 @@ async def create_job(
         "assignments": page_assignments(names),
         "scene_plan": None,
     }
-    target = generate_demo_job if mode == "demo" else generate_real_job
-    threading.Thread(target=target, args=(job_id,), daemon=True).start()
+    threading.Thread(target=generate_real_job, args=(job_id,), daemon=True).start()
     return {"id": job_id}
 
 
@@ -890,26 +956,43 @@ def job_status(job_id: str):
         "progress": job.get("progress", 0),
         "message": job.get("message", ""),
         "error": job.get("error"),
+        "kind": job.get("kind", "live"),
     }
     if job["status"] == "done":
         payload["download"] = f"/api/jobs/{job_id}/download"
-        payload["images"] = [
-            {"label": "Cover", "url": f"/api/jobs/{job_id}/image/cover", "retry": False, "quality": "High"},
-            *[
-                {"label": f"Coloring page {i}", "url": f"/api/jobs/{job_id}/image/{i}", "retry": True, "quality": "Low"}
-                for i in range(1, 9)
-            ],
-        ]
+        if job.get("kind") == "preset_demo":
+            preset = DEMO_PRESETS[job["preset"]]
+            payload["pdf_pages"] = preset["pdf_pages"]
+            payload["images"] = [
+                {"label": "Cover", "url": f"/api/jobs/{job_id}/image/cover", "retry": False, "quality": "Sample"},
+                *[
+                    {"label": f"Coloring page {i}", "url": f"/api/jobs/{job_id}/image/{i}", "retry": False, "quality": "Sample"}
+                    for i in range(1, preset["interior_pages"] + 1)
+                ],
+            ]
+        else:
+            payload["pdf_pages"] = 12
+            payload["images"] = [
+                {"label": "Cover", "url": f"/api/jobs/{job_id}/image/cover", "retry": False, "quality": "High"},
+                *[
+                    {"label": f"Coloring page {i}", "url": f"/api/jobs/{job_id}/image/{i}", "retry": True, "quality": "Low"}
+                    for i in range(1, 9)
+                ],
+            ]
     return payload
 
 
 @app.get("/api/jobs/{job_id}/image/{page}")
 def job_image(job_id: str, page: str):
     job = get_job(job_id)
-    path = Path(job["job_dir"]) / ("cover.png" if page == "cover" else f"page_{int(page)}.png")
+    filename = ("cover.jpg" if job.get("kind") == "preset_demo" else "cover.png") if page == "cover" else (f"page_{int(page)}.jpg" if job.get("kind") == "preset_demo" else f"page_{int(page)}.png")
+    if job.get("kind") == "preset_demo":
+        path = DEMO_PRESETS_DIR / job["preset"] / filename
+    else:
+        path = Path(job["job_dir"]) / filename
     if not path.exists():
         raise HTTPException(404, "Image not ready.")
-    return FileResponse(path, media_type="image/png", headers={"Cache-Control": "no-store"})
+    return FileResponse(path, media_type=("image/jpeg" if path.suffix.lower() in {".jpg", ".jpeg"} else "image/png"), headers={"Cache-Control": "no-store"})
 
 
 @app.get("/api/jobs/{job_id}/download")
@@ -924,18 +1007,12 @@ def download(job_id: str):
 @app.post("/api/jobs/{job_id}/retry/{page_num}")
 def retry_page(job_id: str, page_num: int):
     job = get_job(job_id)
+    if job.get("kind") != "live":
+        raise HTTPException(400, "Demo pages are fixed samples and cannot be retried.")
     if not 1 <= page_num <= 8:
         raise HTTPException(400, "Page must be between 1 and 8.")
     if job.get("status") not in {"done", "error"}:
         raise HTTPException(409, "Wait until generation finishes before retrying a page.")
-    if job["mode"] == "demo":
-        # Free simulation: rotate to another pre-generated sample image.
-        src = DEMO_ASSETS / DEMO_INTERIORS[(page_num + 2) % len(DEMO_INTERIORS)]
-        shutil.copy2(src, Path(job["job_dir"]) / f"page_{page_num}.png")
-        pdf = build_pdf(Path(job["job_dir"]), job["title"])
-        set_job(job_id, status="done", progress=100, message=f"Demo retry simulated for page {page_num}. No API credit used.", pdf=str(pdf))
-        return {"ok": True, "message": "Demo retry simulated — no API call."}
-
     if not OPENAI_API_KEY:
         raise HTTPException(400, "OPENAI_API_KEY is not configured.")
 
