@@ -40,7 +40,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 jobs: dict[str, dict] = {}
 jobs_lock = threading.Lock()
 
-APP_VERSION = "preschool-simplification-v7.1"
+APP_VERSION = "blank-form-v7.3"
 TEXT_MODEL = os.getenv("TEXT_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini"
 
 COPYRIGHT_SAFETY = (
@@ -823,7 +823,7 @@ async def create_job(
     description: str = Form(...),
     age: int = Form(...),
     character_names: list[str] = Form(...),
-    photos: list[UploadFile] = File(...),
+    photos: Optional[list[UploadFile]] = File(None),
 ):
     cleanup_old_jobs()
     title = title.strip()
@@ -835,8 +835,9 @@ async def create_job(
         raise HTTPException(400, "Target age must be between 3 and 17.")
     if not 1 <= len(names) <= 4:
         raise HTTPException(400, "Add between 1 and 4 people.")
-    if len(names) != len(photos):
-        raise HTTPException(400, "Every person needs exactly one photo.")
+    clean_photos = [p for p in (photos or []) if p and getattr(p, "filename", "")]
+    if mode == "real" and len(names) != len(clean_photos):
+        raise HTTPException(400, "Every person needs exactly one photo for real generation.")
     if mode == "real" and not OPENAI_API_KEY:
         raise HTTPException(400, "Real generation is not available until OPENAI_API_KEY is configured.")
     if mode not in {"demo", "real"}:
@@ -846,16 +847,17 @@ async def create_job(
     job_dir = JOBS_DIR / job_id
     job_dir.mkdir(parents=True)
     refs = []
-    try:
-        for i, upload in enumerate(photos, start=1):
-            data = await upload.read()
-            image = read_and_normalize_upload(data)
-            ref = job_dir / f"reference_{i}.jpg"
-            save_reference(image, ref)
-            refs.append(str(ref))
-    except ValueError as exc:
-        shutil.rmtree(job_dir, ignore_errors=True)
-        raise HTTPException(400, str(exc))
+    if mode == "real":
+        try:
+            for i, upload in enumerate(clean_photos, start=1):
+                data = await upload.read()
+                image = read_and_normalize_upload(data)
+                ref = job_dir / f"reference_{i}.jpg"
+                save_reference(image, ref)
+                refs.append(str(ref))
+        except ValueError as exc:
+            shutil.rmtree(job_dir, ignore_errors=True)
+            raise HTTPException(400, str(exc))
 
     jobs[job_id] = {
         "id": job_id,
