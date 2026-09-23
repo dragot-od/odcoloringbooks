@@ -40,7 +40,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 jobs: dict[str, dict] = {}
 jobs_lock = threading.Lock()
 
-APP_VERSION = "age-adaptive-scene-planner-v6"
+APP_VERSION = "preschool-simplification-v7.1"
 TEXT_MODEL = os.getenv("TEXT_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini"
 
 COPYRIGHT_SAFETY = (
@@ -94,32 +94,58 @@ VIEWPOINTS = [
 
 
 def age_guidance(age: int) -> str:
-    if age <= 5:
+    if age <= 4:
         return (
-            "Target age is 3–5. Keep the artwork very simple and easy to color: thick bold outlines, very large coloring spaces, very simple shapes, fewer objects per page, highly readable facial expressions, and uncluttered backgrounds. Still show the setting clearly, but use simplified environmental details rather than dense scenes."
+            "Target age is 3–4. EXTREME SIMPLICITY is required. Use very thick bold outlines, huge open coloring areas, simple rounded shapes, and minimal overlap. "
+            "Keep each page focused on ONE clear action. Use only a few large background objects needed to identify the setting. Avoid dense scenery, texture strokes, repeated leaves, many rocks, grass blades, water ripples, bark grain, fur hatching, tiny clothing details, or other small decorative marks. "
+            "A preschooler should be able to color most spaces with a crayon without needing fine motor precision. Age simplicity overrides requests for rich environmental detail."
         )
-    if age <= 8:
+    if age <= 6:
         return (
-            "Target age is 6–8. Keep the artwork simple and child-friendly: bold outlines, large coloring spaces, clear action, and moderate environmental detail. Show recognizable settings and props, but avoid clutter or excessive tiny detail."
+            "Target age is 5–6. Keep the artwork very simple: thick bold outlines, large coloring spaces, simple shapes, limited overlap, and uncluttered scenes. Show the setting with a small number of large recognizable elements, not dense texture or many tiny props."
+        )
+    if age <= 9:
+        return (
+            "Target age is 7–9. Use simple-to-moderate detail: bold clean outlines, large-to-medium coloring areas, clear action, recognizable settings, and a modest number of props. Avoid excessive texture and tiny repeated details."
         )
     if age <= 12:
         return (
-            "Target age is 9–12. Use moderate detail: clean line art, good environmental detail, more interesting props and scenery, and somewhat smaller coloring regions where appropriate, while keeping the page readable and fun to color."
+            "Target age is 10–12. Use moderate detail: clean line art, richer settings, more props and environmental elements, and some smaller coloring regions, while keeping the composition readable and enjoyable to color."
         )
     return (
-        "Target age is 13+. Use more detailed and sophisticated coloring-book line art: still clean and readable, but with richer environments, more texture and props, more complex scenery, and a more advanced level of visual detail suitable for teens."
+        "Target age is 13+. Use more sophisticated coloring-book line art with richer environments, more texture and props, more complex scenery, and smaller detail areas while maintaining clear, printable outlines."
+    )
+
+
+def environment_guidance(age: int) -> str:
+    if age <= 4:
+        return (
+            "PRESCHOOL ENVIRONMENT RULE: The setting must be recognizable but SPARSE. Use about 2–4 large environmental elements total beyond the main character(s), such as one big tree, one log, a simple stream edge, and a distant hill. "
+            "Do not fill every empty area. Large blank white spaces are desirable. Do not use foreground/middle-ground/background density as a goal. Remove decorative clutter and repeated texture marks."
+        )
+    if age <= 6:
+        return (
+            "YOUNG-CHILD ENVIRONMENT RULE: Clearly show the setting using a few large, simple environmental elements. Keep backgrounds uncluttered and leave generous white space. Avoid dense foliage, many small props, or texture-heavy scenery."
+        )
+    if age <= 9:
+        return (
+            "CHILD ENVIRONMENT RULE: Show a clear setting with several recognizable elements and moderate background detail, but keep the scene easy to read and color."
+        )
+    return (
+        "ENVIRONMENT RULE: Show a complete, recognizable setting using location-specific architecture, scenery, props, and layered environmental details appropriate to the target age."
     )
 
 
 def age_label(age: int) -> str:
-    if age <= 5:
-        return "ages 3–5"
-    if age <= 8:
-        return "ages 6–8"
+    if age <= 4:
+        return "ages 3–4"
+    if age <= 6:
+        return "ages 5–6"
+    if age <= 9:
+        return "ages 7–9"
     if age <= 12:
-        return "ages 9–12"
+        return "ages 10–12"
     return "ages 13+"
-
 
 
 def _unauthorized() -> Response:
@@ -302,7 +328,7 @@ def fallback_scene_plan(names: list[str], description: str, assignments: list[di
         who = selected[0] if len(selected) == 1 else " and ".join(selected)
         pages.append({
             "page": i,
-            "brief": f"Page {i} should feature {who} in {SCENE_DIRECTIONS[i-1]}, strongly grounded in this detailed description: {description}. Show a specific location with meaningful environmental details, props, and action. Complexity should suit {age_label(age)}."
+            "brief": f"Page {i} should feature {who} in {SCENE_DIRECTIONS[i-1]}, strongly grounded in this detailed description: {description}. Show a specific location and clear action. Complexity must strictly suit {age_label(age)}; for preschool ages, use only a few large background elements and no decorative clutter."
         })
     return {"cover_brief": cover_brief, "pages": pages}
 
@@ -320,24 +346,24 @@ def plan_scene_briefs(names: list[str], title: str, description: str, assignment
     people = ", ".join(names)
     system = (
         "You are a creative art director for children's coloring books. "
-        "Your job is to transform a user's description into vivid, visually rich scene briefs for image generation. "
-        "Always emphasize strong environments, varied sub-locations, props, architecture, scenery, and specific actions. "
-        "Avoid generic repeated scenes. Return strict JSON only."
+        "Transform the user's description into distinct scene briefs for image generation. "
+        "AGE APPROPRIATENESS HAS HIGHEST PRIORITY: for preschool ages, simplify aggressively and do not create visually dense scene briefs; for older children and teens, progressively allow more environmental richness. "
+        "Use varied sub-locations and specific actions without exceeding the target-age complexity. Avoid generic repeated scenes. Return strict JSON only."
     )
     user = f"""Create an 8-page interior scene plan plus one cover scene brief for a personalized children's coloring book.
 
 Book title: {title}
 Characters: {people}
-Target age: {age} ({age_label(age)})\nAge-specific art guidance: {age_guidance(age)}\n\nDetailed Description:\n{description}\n\nInterior page cast plan (must be followed):
+Target age: {age} ({age_label(age)})\nAge-specific art guidance: {age_guidance(age)}\nEnvironment guidance: {environment_guidance(age)}\n\nDetailed Description:\n{description}\n\nInterior page cast plan (must be followed):
 {plan_text}
 
 Requirements:
 - Create one short but specific cover_brief for the cover image.
 - Create exactly 8 page briefs, one for each page listed above.
 - Each page brief must be visually distinct from the others.
-- Each page brief must clearly depict a specific environment or sub-location, not just characters floating on a vague backdrop.
+- Each page brief must clearly establish a specific environment or sub-location, but the amount of scenery must obey the target-age guidance.
 - Spread the action across different rooms, landmarks, settings, or activity moments implied by the description.
-- Mention meaningful props, scenery, and background details.
+- For ages 3–4, name only a few large environmental elements and leave abundant visual breathing room; for older ages, progressively allow more props, scenery, and background detail.
 - Make the scenes imaginative, storybook-like, and more creative than a literal one-line interpretation.
 - Keep the scenes family-friendly and suitable for a children's coloring book.
 - Respect the page cast plan exactly.
@@ -398,7 +424,6 @@ def openai_edit(reference_paths: list[Path], prompt: str, quality: str) -> Image
     headers = {"Authorization": f"Bearer {OPENAI_API_KEY}"}
     data = {
         "model": IMAGE_MODEL,
-        "planner_model": TEXT_MODEL,
         "prompt": prompt,
         "size": "1088x1408",  # exact 8.5:11 aspect ratio; both dimensions divisible by 16
         "quality": quality,
@@ -432,7 +457,7 @@ Draw a polished full-color personalized coloring-book COVER illustration.
 DETAILED DESCRIPTION:
 {description}
 
-TARGET AGE: {age} ({age_label(age)})\nAGE-APPROPRIATE ART GUIDANCE: {age_guidance(age)}\n\nCREATIVE COVER BRIEF:\n{scene_brief}\n\nCharacters who must all appear: {people}
+TARGET AGE: {age} ({age_label(age)})\nAGE-APPROPRIATE ART GUIDANCE: {age_guidance(age)}\nENVIRONMENT GUIDANCE: {environment_guidance(age)}\n\nCREATIVE COVER BRIEF:\n{scene_brief}\n\nCharacters who must all appear: {people}
 {ids}
 
 TITLE — EXACT TEXT:
@@ -460,12 +485,22 @@ DETAILED DESCRIPTION:
 {description}
 
 Featured character(s): {who}
-TARGET AGE: {age} ({age_label(age)})\nAGE-APPROPRIATE ART GUIDANCE: {age_guidance(age)}\n\nCREATIVE PAGE BRIEF:\n{scene_brief}\n\n{ids}
-ENVIRONMENT REQUIREMENT: The setting is mandatory and must be visually substantial. Do NOT create an isolated character-and-creature portrait on an empty backdrop. Show a complete, recognizable environment drawn in line art, using several specific details from the Detailed Description such as rooms, architecture, landscape features, furniture, props, decorations, pathways, structures, or other location-specific elements. The environment should occupy a meaningful portion of the page and make it immediately clear WHERE the scene takes place. Use foreground, middle-ground, and background elements when appropriate.
+TARGET AGE: {age} ({age_label(age)})
+AGE-APPROPRIATE ART GUIDANCE:
+{age_guidance(age)}
 
-This page must feel individually illustrated. Use a facial expression, head angle, body pose, camera/viewing angle, and composition that are noticeably different from a repeated stock portrait. Make the action visually clear and use the environment as part of the scene. Follow the Creative Page Brief closely so the scene is imaginative and specific rather than generic. Match the amount of visual detail, object count, and overall complexity to the target age.
+ENVIRONMENT GUIDANCE:
+{environment_guidance(age)}
 
-Coloring-book requirements: black-and-white line art on white paper; bold clean black outlines; large colorable spaces; simple readable forms; minimal tiny detail for young children, with more detail permitted for older children and teens according to the target age; no gray shading; no color; no words; no captions; no page number. IMPORTANT: "white paper" means no gray or colored fill; it does NOT mean an empty background. Draw the described environment with black outlines on the white page. Single full-page composition only. Absolutely no grids, contact sheets, montages, comic panels, or multiple scenes within the image. Keep important faces, hands, props, and environmental features away from the extreme edges.
+CREATIVE PAGE BRIEF:
+{scene_brief}
+
+{ids}
+The setting must be recognizable, but TARGET-AGE SIMPLICITY OVERRIDES environmental richness. For very young children, simplify or omit any scene-brief detail that would create clutter, tiny spaces, dense texture, or difficult coloring areas.
+
+This page must feel individually illustrated. Use a different natural facial expression, head angle, body pose, and composition from repeated stock portraits. Keep the action immediately understandable. For preschool pages, prioritize one clear action and a few large shapes over cinematic complexity.
+
+Coloring-book requirements: black-and-white line art on white paper; bold clean black outlines; no gray shading; no color; no words; no captions; no page number. Complexity, line density, number of objects, and size of coloring regions MUST follow the target-age guidance. For ages 3–4, use extra-thick outlines, huge open spaces, very few objects, almost no texture lines, minimal overlaps, and generous blank white space. Single full-page composition only. Absolutely no grids, contact sheets, montages, comic panels, or multiple scenes within the image. Keep important faces, hands, props, and environmental features away from the extreme edges.
 {COPYRIGHT_SAFETY}
 """.strip()
 
@@ -581,6 +616,14 @@ CREATIVE DIRECTION FOR THIS ATTEMPT
 
 Use this direction as inspiration for a genuinely new design. Do not merely make a small variation of a previous composition.
 
+AGE-APPROPRIATE DETAIL LEVEL
+
+{age_guidance(age)}
+
+{environment_guidance(age)}
+
+These age rules have higher priority than requests for environmental richness. For preschool ages, a recognizable but sparse setting is correct; do NOT fill the page with detail merely because the Detailed Description contains many possible objects or locations.
+
 DETAILED DESCRIPTION / ENVIRONMENT REQUIREMENT
 
 Treat the Detailed Description as a visual specification for the entire book, not merely a loose theme. Use it as the main source for:
@@ -594,7 +637,7 @@ Treat the Detailed Description as a visual specification for the entire book, no
 
 Before creating the artwork, plan a varied sequence of scenes so the book explores different locations, rooms, areas, activities, and visual details described by the user. Spread these throughout the beginning, middle, and end of the book.
 
-Every interior page must clearly show WHERE the action is happening. Do not create pages that only show the person and a creature/object against an empty or generic background. Each page should include a meaningful environmental setting with multiple recognizable location-specific details. Use foreground, middle-ground, and background elements when appropriate.
+Every interior page must clearly show WHERE the action is happening. Do not create pages that only show the person and a creature/object against an empty or generic background. Each page should include a meaningful environmental setting, but its density must match the target age. For ages 3–4, use only a few large location-specific elements and plenty of blank white space; do not force multiple layers of detail.
 
 ARTWORK TO CREATE
 
@@ -640,7 +683,7 @@ Every page should feel individually illustrated. Deliberately vary facial expres
 
 COLORING-BOOK STYLE
 
-Every interior image must have:\n- black-and-white line art only\n- white paper with a fully drawn environmental line-art setting\n- bold, clean outlines\n- age-appropriate coloring spaces and complexity\n- relatively simple forms for younger children, with more detail allowed for older children and teens\n- an amount of tiny detail appropriate to the target age\n- no grayscale shading
+Every interior image must have:\n- black-and-white line art only\n- white paper with a fully drawn environmental line-art setting\n- bold, clean outlines\n- age-appropriate coloring spaces and complexity\n- for ages 3–4: extra-thick outlines, huge open shapes, very few objects, minimal overlap, almost no texture lines, and generous blank white space\n- progressively more detail for older children and teens\n- no tiny decorative detail for preschool pages\n- no grayscale shading
 - no colored elements
 - no captions
 - no story text
