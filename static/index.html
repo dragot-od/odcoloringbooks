@@ -21,16 +21,17 @@
 
   <section class="card">
     <h2>Create a demo book</h2>
-    <p class="sub">Automatic mode creates a high-quality color cover plus 8 low-quality coloring pages. Any weak interior page can be retried individually at medium quality.</p>
+    <p class="sub">Automatic mode creates a high-quality color cover plus 8 low-quality coloring pages. Any weak interior page can be retried individually at medium quality. In Demo Mode, photo uploads are optional.</p>
     <form id="bookForm">
       <div class="grid">
-        <div class="field full"><label>Book title</label><input id="title" value="Willy Meets Bigfoot" required /></div>
-        <div class="field"><label>Target age</label><input id="age" type="number" min="3" max="17" value="5" required /></div>
-        <div class="field"><label>Age guidance</label><div class="note" style="margin-top:0">Younger kids get simpler pages with thicker outlines and fewer objects. Older kids and teens get richer scenes and more detail.</div></div>
+        <div class="field full"><label>Book title</label><input id="title" placeholder="Enter the coloring-book title" required /></div>
+        <div class="field"><label>Target age</label><input id="age" type="number" min="3" max="17" placeholder="e.g. 5" required /></div>
+        <div class="field"><label>Age guidance</label><div class="note" style="margin-top:0">Age 3–4 uses preschool-simple pages: extra-thick outlines, huge coloring spaces, very few objects, and lots of white space. Detail increases gradually for older kids and teens.</div></div>
         <div class="field full">
           <label>Detailed Description</label>
-          <textarea id="description" required placeholder="Describe the world, settings, activities, mood, side characters or creatures, important objects, and visual details you want to see throughout the book.">Willy explores a whimsical forest while meeting a friendly Bigfoot. Show varied locations such as a woodland trail, creek, clearing, log bridge, waterfall, cozy cave, giant trees, mushrooms, ferns, and a sunset overlook. Include playful outdoor activities, forest animals, backpacks, maps, lanterns, and other adventure props. Keep the mood warm, funny, adventurous, and family-friendly.</textarea>
-          <div class="help"><b>Tip:</b> Be specific about the setting. Include rooms or locations, activities, important objects, creatures or side characters, and the mood/style. The generator will spread those details across different pages instead of focusing only on the people. It will also adapt the complexity of the coloring pages to the target age.</div>
+          <textarea id="description" required placeholder="Describe the cartoon in detail: where it takes place, different rooms or locations, what the characters are doing, important props or objects, side characters or creatures, and the mood/style you want. The more detail you provide, the more varied and specific the pages can be."></textarea>
+          <div class="help"><b>Tip:</b> Be specific about the setting. Include rooms or locations, activities, important objects, creatures or side characters, and the mood/style. The generator will spread those details across different pages instead of focusing only on the people. It will also adapt the complexity of the coloring pages to the target age. For preschool ages, simple readable scenes take priority over packing in every possible detail.</div>
+          <div class="help" style="margin-top:8px;color:#7a5a00"><b>* Note:</b> Copyrighted material or other prohibited content may cause generation to fail. If it does, rewrite the description and try again.</div>
         </div>
         <div class="field full">
           <label>Characters</label>
@@ -101,13 +102,13 @@ function addCharacter(name=''){
   if(chars.children.length>=4)return;
   const idx=chars.children.length+1;
   const div=document.createElement('div'); div.className='person';
-  div.innerHTML=`<div class="field"><label>Person ${idx} name</label><input class="pname" value="${name}" placeholder="Name" required></div><div class="field"><label>Person ${idx} photo</label><input class="pphoto" type="file" accept="image/*" required></div><button type="button" class="btn remove">Remove</button>`;
+  div.innerHTML=`<div class="field"><label>Person ${idx} name</label><input class="pname" value="${name}" placeholder="Name" required></div><div class="field"><label>Person ${idx} photo <span class="photohint" style="font-weight:600;color:#6b7280">(required for Real mode, optional for Demo mode)</span></label><input class="pphoto" type="file" accept="image/*"></div><button type="button" class="btn remove">Remove</button>`;
   div.querySelector('.remove').onclick=()=>{if(chars.children.length>1){div.remove();renumber();}};
   chars.appendChild(div); renumber();
 }
 function renumber(){[...chars.children].forEach((el,i)=>{el.querySelector('label').textContent=`Person ${i+1} name`;el.querySelectorAll('label')[1].textContent=`Person ${i+1} photo`;el.querySelector('.remove').style.display=chars.children.length===1?'none':'block';});addPerson.disabled=chars.children.length>=4;}
 addPerson.onclick=()=>addCharacter('');
-addCharacter('Willy');
+addCharacter('');
 
 fetch('/api/config').then(r=>r.json()).then(c=>{apiConfigured=c.api_configured;if(!apiConfigured){demoMode.checked=true;}}).catch(()=>{});
 
@@ -117,11 +118,11 @@ function formDataForBook(){
   [...chars.children].forEach(el=>{fd.append('character_names',el.querySelector('.pname').value.trim());const f=el.querySelector('.pphoto').files[0];if(f)fd.append('photos',f);});return fd;
 }
 function readFields(){return {title:document.getElementById('title').value.trim(),age:parseInt(document.getElementById('age').value,10),description:document.getElementById('description').value.trim(),names:[...chars.querySelectorAll('.pname')].map(x=>x.value.trim()).filter(Boolean)};}
-function validate(needPhotos=true){const f=readFields();if(!f.title||!f.description||!f.names.length||!Number.isInteger(f.age)){showError('Enter a title, target age, a detailed description, and at least one person.');return false;}if(f.age<3||f.age>17){showError('Target age must be between 3 and 17.');return false;}if(needPhotos){for(const el of chars.children){if(!el.querySelector('.pphoto').files[0]){showError('Every person needs an uploaded photo.');return false;}}}return true;}
+function validate(needPhotos=true){const f=readFields();if(!f.title||!f.description||!f.names.length||!Number.isInteger(f.age)){showError('Enter a title, target age, a detailed description, and at least one person.');return false;}if(f.age<3||f.age>17){showError('Target age must be between 3 and 17.');return false;}if(needPhotos){for(const el of chars.children){if(!el.querySelector('.pphoto').files[0]){showError('Every person needs an uploaded photo for Real mode.');return false;}}}return true;}
 
 form.onsubmit=async e=>{
   e.preventDefault();error.style.display='none';gallery.style.display='none';
-  if(!validate(true))return;if(!demoMode.checked&&!apiConfigured){showError('Real generation needs OPENAI_API_KEY configured on Render. Demo Mode still works.');return;}
+  if(!validate(!demoMode.checked))return;if(!demoMode.checked&&!apiConfigured){showError('Real generation needs OPENAI_API_KEY configured on Render. Demo Mode still works.');return;}
   generate.disabled=true;progress.style.display='block';bar.style.width='2%';pct.textContent='2%';message.textContent='Uploading…';
   try{const r=await fetch('/api/jobs',{method:'POST',body:formDataForBook()});const j=await r.json();if(!r.ok)throw new Error(j.detail||'Could not start generation');currentJob=j.id;poll(j.id);}catch(err){showError(err.message);generate.disabled=false;}
 };
