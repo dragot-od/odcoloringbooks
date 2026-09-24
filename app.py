@@ -40,7 +40,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 jobs: dict[str, dict] = {}
 jobs_lock = threading.Lock()
 
-APP_VERSION = "random-helper-below-standard-v9.3"
+APP_VERSION = "multi-person-random-helper-v9.4"
 TEXT_MODEL = os.getenv("TEXT_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini"
 
 RNG = random.SystemRandom()
@@ -306,11 +306,18 @@ RANDOM_IDEA_TONE_LABELS = {
     "action": "Action-Packed",
 }
 
-TITLE_TEMPLATES = [
-    "{name} and the {subject_title} Adventure",
-    "{name} Explores the {subject_title} World",
-    "{name} Visits the {subject_title} Kingdom",
-    "{name}'s {subject_title} Journey",
+TITLE_TEMPLATES_SINGLE = [
+    "{people} and the {subject_title} Adventure",
+    "{people} Explores the {subject_title} World",
+    "{people} Visits the {subject_title} Kingdom",
+    "{people}'s {subject_title} Journey",
+]
+
+TITLE_TEMPLATES_MULTI = [
+    "{people}: The {subject_title} Adventure",
+    "{people} Explore the {subject_title} World",
+    "{people} Visit the {subject_title} Kingdom",
+    "{people} Take On a {subject_title} Adventure",
 ]
 
 
@@ -338,13 +345,13 @@ def random_age_value() -> int:
 
 def pick_subject_bundle(subject: str) -> tuple[str, dict]:
     raw = (subject or "").strip()
-    key = subject_key(raw)
+    generated_subject = raw or RNG.choice(RANDOM_IDEA_SUBJECTS)
+    key = subject_key(generated_subject)
     if key in SUBJECT_BUNDLES:
-        return raw or key, SUBJECT_BUNDLES[key]
+        return generated_subject, SUBJECT_BUNDLES[key]
     singular = key[:-1] if key.endswith("s") else key
     if singular in SUBJECT_BUNDLES:
-        return raw or singular, SUBJECT_BUNDLES[singular]
-    generated_subject = raw or RNG.choice(RANDOM_IDEA_SUBJECTS)
+        return generated_subject, SUBJECT_BUNDLES[singular]
     locations = RNG.sample(GENERIC_LOCATION_POOL, k=min(6, len(GENERIC_LOCATION_POOL)))
     bundle = {
         "world": f"a {generated_subject} themed world with several fun places to explore" if generated_subject else RNG.choice(GENERIC_WORLD_OPTIONS),
@@ -364,9 +371,22 @@ def humanize_subject(subject: str) -> str:
     return " ".join(word.capitalize() for word in s.replace("_", " ").split())
 
 
-def random_book_title(name: str, subject: str) -> str:
+def format_people(names: list[str]) -> str:
+    clean = [str(n).strip() for n in names if str(n).strip()]
+    if not clean:
+        return "A New Friend"
+    if len(clean) == 1:
+        return clean[0]
+    if len(clean) == 2:
+        return f"{clean[0]} and {clean[1]}"
+    return ", ".join(clean[:-1]) + f", and {clean[-1]}"
+
+
+def random_book_title(names: list[str], subject: str) -> str:
     subject_title = humanize_subject(subject)
-    return RNG.choice(TITLE_TEMPLATES).format(name=name, subject_title=subject_title)
+    people = format_people(names)
+    templates = TITLE_TEMPLATES_SINGLE if len(names) == 1 else TITLE_TEMPLATES_MULTI
+    return RNG.choice(templates).format(people=people, subject_title=subject_title)
 
 
 def choose_random_idea_tone(tone: str | None = None) -> tuple[str, str]:
@@ -383,7 +403,7 @@ def choose_random_idea_tone(tone: str | None = None) -> tuple[str, str]:
     return key, RANDOM_IDEA_TONES[key]
 
 
-def build_random_description(name: str, age: int, subject: str, bundle: dict, tone_guidance: str) -> str:
+def build_random_description(names: list[str], age: int, subject: str, bundle: dict, tone_guidance: str) -> str:
     bucket = age_bucket(age)
     locations = list(bundle.get("locations", []))[:6]
     props = list(bundle.get("props", []))[:4]
@@ -399,10 +419,11 @@ def build_random_description(name: str, age: int, subject: str, bundle: dict, to
     mood = tone_guidance or bundle_mood
     world = bundle.get("world", f"a {subject or 'fun'} themed adventure world")
     subject_phrase = subject or "adventure"
+    people = format_people(names)
 
     if bucket == "preschool":
         return (
-            f"Create a very simple coloring-book adventure for a {age}-year-old about {name} exploring {world}. "
+            f"Create a very simple coloring-book adventure for a {age}-year-old about {people} exploring {world}. "
             f"Use large, easy-to-recognize scenes such as {locations[0]}, {locations[1]}, {locations[2]}, and {locations[3]}. "
             f"Include friendly {helpers}, simple props like {props[0]} and {props[1]}, and easy activities like {activities[0]}, {activities[1]}, {activities[2]}, and {activities[3]}. "
             f"Use a {mood} tone throughout, with very simple environments and clear visual variety."
@@ -410,7 +431,7 @@ def build_random_description(name: str, age: int, subject: str, bundle: dict, to
 
     if bucket == "early":
         return (
-            f"Create a playful {subject_phrase} adventure for {name}. Set it in {world}. "
+            f"Create a playful {subject_phrase} adventure for {people}. Set it in {world}. "
             f"Show different locations such as {locations[0]}, {locations[1]}, {locations[2]}, {locations[3]}, and {locations[4]}. "
             f"Include {helpers}, props like {props[0]}, {props[1]}, and {props[2]}, and activities such as {activities[0]}, {activities[1]}, {activities[2]}, {activities[3]}, and {activities[4]}. "
             f"Keep the tone {mood}, with a clear beginning, middle, and happy ending."
@@ -418,29 +439,48 @@ def build_random_description(name: str, age: int, subject: str, bundle: dict, to
 
     if bucket in {"middle", "upper"}:
         return (
-            f"Create a detailed, kid-friendly {subject_phrase} adventure starring {name}. Set the story in {world}. "
+            f"Create a detailed, kid-friendly {subject_phrase} adventure starring {people}. Set the story in {world}. "
             f"Spread the pages across varied places such as {locations[0]}, {locations[1]}, {locations[2]}, {locations[3]}, {locations[4]}, and {locations[5]}. "
             f"Include {helpers}, useful props like {props[0]}, {props[1]}, {props[2]}, and {props[3]}, and show activities like {activities[0]}, {activities[1]}, {activities[2]}, {activities[3]}, and {activities[4]}. "
             f"Keep the tone {mood} and make the pages visually varied from one another."
         )
 
     return (
-        f"Create a more advanced coloring-book adventure for {name} built around the theme of {subject_phrase}. "
+        f"Create a more advanced coloring-book adventure for {people} built around the theme of {subject_phrase}. "
         f"Set it in {world} and move through distinct scenes such as {locations[0]}, {locations[1]}, {locations[2]}, {locations[3]}, {locations[4]}, and {locations[5]}. "
         f"Include {helpers}, props like {props[0]}, {props[1]}, {props[2]}, and {props[3]}, and activities such as {activities[0]}, {activities[1]}, {activities[2]}, {activities[3]}, and {activities[4]}. "
         f"Keep the tone {mood}, while making the pages distinct and story-like."
     )
 
 
-def generate_random_book_idea(name: str | None = None, age: int | None = None, subject: str | None = None, tone: str | None = None) -> dict:
-    chosen_name = (name or "").strip() or RNG.choice(RANDOM_IDEA_NAMES)
+def generate_random_book_idea(names: list[str] | None = None, age: int | None = None, subject: str | None = None, tone: str | None = None) -> dict:
+    requested = list(names or [])
+    if not requested:
+        requested = [""]
+    requested = requested[:4]
+
+    chosen_names: list[str] = []
+    available_names = list(RANDOM_IDEA_NAMES)
+    RNG.shuffle(available_names)
+    for raw in requested:
+        value = str(raw or "").strip()
+        if value:
+            chosen_names.append(value)
+            if value in available_names:
+                available_names.remove(value)
+        else:
+            while available_names and available_names[0] in chosen_names:
+                available_names.pop(0)
+            chosen_names.append(available_names.pop(0) if available_names else f"Friend {len(chosen_names)+1}")
+
     chosen_age = age if isinstance(age, int) and 3 <= age <= 17 else random_age_value()
     chosen_subject, bundle = pick_subject_bundle(subject or "")
     tone_key, tone_guidance = choose_random_idea_tone(tone)
-    title = random_book_title(chosen_name, chosen_subject)
-    description = build_random_description(chosen_name, chosen_age, chosen_subject, bundle, tone_guidance)
+    title = random_book_title(chosen_names, chosen_subject)
+    description = build_random_description(chosen_names, chosen_age, chosen_subject, bundle, tone_guidance)
     return {
-        "name": chosen_name,
+        "names": chosen_names,
+        "name": chosen_names[0],
         "age": chosen_age,
         "subject": chosen_subject,
         "tone": tone_key,
@@ -1414,7 +1454,13 @@ async def create_demo_job(request: Request):
 @app.post("/api/random-book-idea")
 async def random_book_idea(request: Request):
     body = await request.json()
-    name = str(body.get("name", "") or "").strip()
+    raw_names = body.get("names", [])
+    if not isinstance(raw_names, list):
+        raw_names = []
+    names = [str(x or "").strip() for x in raw_names][:4]
+    if not names:
+        legacy_name = str(body.get("name", "") or "").strip()
+        names = [legacy_name]
     subject = str(body.get("subject", "") or "").strip()
     tone = str(body.get("tone", "") or "").strip()
     age_raw = str(body.get("age", "") or "").strip()
@@ -1426,7 +1472,7 @@ async def random_book_idea(request: Request):
             raise HTTPException(400, "Target age must be a whole number between 3 and 17.")
         if age < 3 or age > 17:
             raise HTTPException(400, "Target age must be between 3 and 17.")
-    return generate_random_book_idea(name=name, age=age, subject=subject, tone=tone)
+    return generate_random_book_idea(names=names, age=age, subject=subject, tone=tone)
 
 
 @app.post("/api/manual-prompts")

@@ -35,3 +35,37 @@ TEXT_MODEL=gpt-4.1-mini
 ```
 
 If `SITE_PASSWORD` is set, use username `demo` and that password.
+
+
+## v9 Book DNA uniqueness
+Each live generation now receives a hidden randomized creative fingerprint that changes story structure, opening situation, activity emphasis, recurring motif, pacing, supporting-character dynamics, ending, cover composition, and page-by-page action/composition/energy recipes. The Manual GPT Prompt 1 includes its own 20-page Book DNA each time prompts are generated.
+
+
+## v9.1 update
+- Added a Random Idea Helper under the Live Generator.
+- Optional inputs: name, target age, and subject.
+- Works even if some or all helper fields are blank.
+- Auto-fills the live title, target age, Detailed Description, and first character name.
+- Manual GPT prompt section now explicitly uses fields filled by the Random Idea Helper.
+
+## v9.2 update
+- Added a Tone selector to the Random Idea Helper.
+- Choices: Surprise Me, Funny, Adventurous, Cute & Gentle, Educational, Magical, Mysterious, Calm & Cozy, and Action-Packed.
+- Surprise Me chooses a new tone automatically.
+- The selected tone is woven directly into the generated Detailed Description, so it also carries into the Manual GPT prompt workflow.
+
+
+## v9.3 update
+- Moved the Random Idea Helper below the normal Live Generator fields.
+- Simplified helper labels to Name (optional), Target age (optional), Subject (optional), and Tone (optional).
+- Blank-field behavior is explained once in the helper instructions instead of repeated in field labels.
+
+
+## v9.4 update
+- Live Generator now begins with People (name + photo) before title, age, and description.
+- Optional Idea Generator visually separated in its own highlighted panel.
+- Idea Generator mirrors the number of people added to the main form with one optional name field per person.
+- Blank helper names are randomized individually; entered names are preserved.
+- Multi-person random ideas combine all names naturally in the generated title and description.
+- Subject, age, and tone can still be supplied or left blank for randomization.
+- Manual GPT prompts continue to use the final live fields, including all generated character names.
