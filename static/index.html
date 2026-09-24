@@ -82,7 +82,7 @@
           <div>
             <span class="idea-chip">Optional Idea Generator</span>
             <h3>Need inspiration? Build the idea for me.</h3>
-            <p>Use this if you need help developing a prompt or just want something completely random. The name fields below automatically match the number of people you added above. Fill in anything you want to keep and leave anything blank to randomize it.</p>
+            <p>Use this if you need help developing a prompt or just want something completely random. The name fields below automatically match the number of people you added above. Fill in anything you want to keep and leave anything blank to randomize it. Use <b>Clear Fields</b> before generating again if you want a completely fresh roll.</p>
           </div>
         </div>
         <div id="ideaNames" class="idea-name-grid"></div>
@@ -90,7 +90,7 @@
           <div class="field"><label>Target age (optional)</label><input id="ideaAge" type="number" min="3" max="17" placeholder="e.g. 8" /></div>
           <div class="field"><label>Subject (optional)</label><input id="ideaSubject" placeholder="e.g. robot" /></div>
           <div class="field"><label>Tone (optional)</label><select id="ideaTone"><option value="">Surprise Me</option><option value="funny">Funny</option><option value="adventurous">Adventurous</option><option value="cute">Cute &amp; Gentle</option><option value="educational">Educational</option><option value="magical">Magical</option><option value="mysterious">Mysterious</option><option value="calm">Calm &amp; Cozy</option><option value="action">Action-Packed</option></select></div>
-          <div class="field" style="justify-content:end"><button class="btn" id="randomIdea" type="button">Generate Random Idea</button></div>
+          <div class="field" style="justify-content:end"><div class="row"><button class="btn" id="randomIdea" type="button">Generate Random Idea</button><button class="btn secondary small" id="clearIdea" type="button">Clear Fields</button></div></div>
         </div>
         <div class="help" style="margin-top:10px">The generator fills the main people names, title, target age, and Detailed Description. With multiple people, their names are combined naturally in the generated title.</div>
       </div>
@@ -148,6 +148,7 @@ const galleryGrid=document.getElementById('galleryGrid');
 const download=document.getElementById('download');
 const generate=document.getElementById('generate');
 const randomIdeaBtn=document.getElementById('randomIdea');
+const clearIdeaBtn=document.getElementById('clearIdea');
 const ideaNames=document.getElementById('ideaNames');
 const ideaAge=document.getElementById('ideaAge');
 const ideaSubject=document.getElementById('ideaSubject');
@@ -203,7 +204,6 @@ function renumber(){
   syncIdeaNameFields();
 }
 addPerson.onclick=()=>addCharacter('');
-addCharacter('');
 addCharacter('');
 
 fetch('/api/config').then(r=>r.json()).then(c=>{apiConfigured=c.api_configured;}).catch(()=>{});
@@ -272,6 +272,14 @@ async function fillRandomIdea(){
   }catch(err){showError(err.message);}
 }
 randomIdeaBtn.onclick=fillRandomIdea;
+function clearIdeaFields(){
+  [...ideaNames.querySelectorAll('.idea-name')].forEach(input=>{input.value='';delete input.dataset.edited;});
+  ideaAge.value='';
+  ideaSubject.value='';
+  ideaTone.value='';
+  error.style.display='none';
+}
+clearIdeaBtn.onclick=clearIdeaFields;
 
 form.onsubmit=async e=>{
   e.preventDefault();error.style.display='none';gallery.style.display='none';
