@@ -69,3 +69,9 @@ Each live generation now receives a hidden randomized creative fingerprint that 
 - Multi-person random ideas combine all names naturally in the generated title and description.
 - Subject, age, and tone can still be supplied or left blank for randomization.
 - Manual GPT prompts continue to use the final live fields, including all generated character names.
+
+## v9.5 update
+- Live Generator now starts with exactly one person by default.
+- Additional people are added only with + Add Another Person.
+- Added a small Clear Fields button beside Generate Random Idea.
+- Clear Fields resets only the Idea Generator helper values (names, target age, subject, and tone) so the next random generation can be a fresh roll without disturbing the main live form or uploaded photos.
