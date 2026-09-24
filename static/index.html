@@ -8,6 +8,9 @@
 :root{--ink:#20242f;--muted:#687184;--line:#dce2ec;--bg:#f5f7fb;--card:#fff;--accent:#5b5bd6;--green:#0c8f68;--warn:#9b6b00}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#f0efff 0,#f7f8fb 310px);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}.wrap{max-width:1060px;margin:auto;padding:40px 18px 80px}.hero{margin-bottom:26px}.eyebrow{font-size:12px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;color:var(--accent)}h1{font-size:clamp(38px,7vw,68px);line-height:1;margin:7px 0 13px;letter-spacing:-.045em}.hero p{max-width:800px;color:var(--muted);font-size:17px;line-height:1.55}.card{background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:0 14px 40px rgba(28,37,57,.07);margin-top:18px}.card h2{margin:0 0 6px;font-size:22px}.sub{color:var(--muted);font-size:14px;line-height:1.5;margin:0 0 18px}.section-kicker{font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:5px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.full{grid-column:1/-1}.field{display:flex;flex-direction:column;gap:7px}.help{font-size:12px;color:var(--muted);line-height:1.45;margin-top:1px}label{font-size:13px;font-weight:850}input,textarea,select{width:100%;padding:12px 13px;border:1px solid #cbd3e1;border-radius:12px;font:inherit;color:var(--ink);background:#fff;outline:none}input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,91,214,.1)}textarea{min-height:92px;resize:vertical}input[readonly],textarea[readonly]{background:#f8f9fc;color:#40485a}.characters{display:grid;gap:12px}.person{display:grid;grid-template-columns:1fr 1.2fr auto;gap:10px;align-items:end;border:1px solid var(--line);border-radius:15px;padding:13px;background:#fafbfe}.person .remove{background:#fff;color:#8a2c2c;border:1px solid #e4baba;box-shadow:none;padding:11px 12px}.btn{border:0;border-radius:12px;padding:13px 18px;font:inherit;font-weight:850;cursor:pointer;background:var(--accent);color:white;box-shadow:0 8px 20px rgba(91,91,214,.2)}.btn.secondary{background:white;color:var(--ink);border:1px solid var(--line);box-shadow:none}.btn.green{background:var(--green)}.btn.small{font-size:13px;padding:9px 12px}.btn:disabled{opacity:.55;cursor:not-allowed}.row{display:flex;gap:11px;align-items:center;flex-wrap:wrap}.note{font-size:13px;color:var(--muted);line-height:1.5;padding:12px 14px;background:#f7f8fb;border-radius:12px;margin-top:14px}.actions{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap}.error{display:none;background:#fff1f0;color:#a42118;border:1px solid #ffc9c5;padding:12px;border-radius:12px;margin-top:12px}.progress{display:none;margin-top:20px}.track{height:12px;background:#e7ebf2;border-radius:999px;overflow:hidden}.track i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),#25a77b);transition:width .3s}.status{display:flex;justify-content:space-between;margin-top:8px;font-size:14px}.gallery{display:none;margin-top:20px}.gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.art{border:1px solid var(--line);border-radius:15px;padding:10px;background:#fff}.art img{display:block;width:100%;aspect-ratio:8.5/11;object-fit:contain;background:#fff;border-radius:9px;border:1px solid #eceff4}.art-head{display:flex;justify-content:space-between;gap:8px;align-items:center;margin:9px 0 7px;font-size:13px}.badge{font-size:11px;color:#586074;background:#f1f3f7;border-radius:99px;padding:4px 7px}.manual{display:grid;grid-template-columns:1fr 1fr;gap:14px}.promptbox{border:1px solid var(--line);border-radius:15px;padding:15px;background:#fbfcff}.promptbox h3{margin:0 0 6px}.promptbox p{font-size:13px;color:var(--muted);line-height:1.45}.promptbox textarea{height:250px;font-size:12px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.fresh{background:#fff8df;border:1px solid #efdda1;color:#6b5310;border-radius:12px;padding:11px 13px;font-size:13px;line-height:1.5;margin-bottom:12px}.footer{font-size:12px;color:#81899a;margin-top:18px;line-height:1.55}
 .preset-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin:15px 0 20px}.preset{appearance:none;border:1px solid var(--line);background:#fff;border-radius:15px;padding:15px 12px;text-align:left;cursor:pointer;transition:.15s;min-height:88px;color:var(--ink)}.preset:hover{border-color:#aaaaf0;transform:translateY(-1px)}.preset.active{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,91,214,.1);background:#f8f8ff}.preset b{display:block;font-size:16px;margin-bottom:4px}.preset span{font-size:12px;color:var(--muted)}.demo-fields{margin-top:4px}.section-divider{height:1px;background:var(--line);margin:22px 0}
+
+.idea-helper{margin-top:22px;padding:20px;border:2px solid rgba(91,91,214,.30);border-radius:20px;background:linear-gradient(135deg,#f3f1ff 0%,#f4fbff 58%,#f8fff9 100%);box-shadow:0 10px 28px rgba(91,91,214,.08)}
+.idea-helper-head{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}.idea-helper h3{margin:3px 0 5px;font-size:20px}.idea-helper p{margin:0;color:var(--muted);font-size:13px;line-height:1.5;max-width:760px}.idea-chip{display:inline-block;font-size:11px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;color:#fff;background:var(--accent);border-radius:999px;padding:6px 9px}.idea-name-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:15px}.idea-helper .btn{box-shadow:0 8px 18px rgba(91,91,214,.17)}
 @media(max-width:760px){.grid,.manual{grid-template-columns:1fr}.full{grid-column:auto}.person{grid-template-columns:1fr}.gallery-grid{grid-template-columns:1fr 1fr}.preset-grid{grid-template-columns:1fr 1fr}.wrap{padding-top:25px}}
 @media(max-width:480px){.gallery-grid,.preset-grid{grid-template-columns:1fr}}
 </style>
@@ -54,9 +57,15 @@
   <section class="card" id="liveSection">
     <div class="section-kicker">2. Live Generator</div>
     <h2>Create a live personalized book</h2>
-    <p class="sub">Upload one or more people and generate a live AI book. Each generation receives a new hidden <b>Book DNA</b> creative fingerprint so identical customer inputs can still produce different story structure, scene order, activities, compositions, pacing, and visual motifs. The automatic version creates a high-quality color cover plus 8 coloring pages, with individual medium-quality retries for weak interior pages. If you need help thinking of an idea, use the Random Idea Helper below to choose or randomize a tone and auto-fill the title, age, description, and first character name.</p>
+    <p class="sub">Upload one or more people and generate a live AI book. Each generation receives a new hidden <b>Book DNA</b> creative fingerprint so identical customer inputs can still produce different story structure, scene order, activities, compositions, pacing, and visual motifs. The automatic version creates a high-quality color cover plus 8 coloring pages, with individual medium-quality retries for weak interior pages. Start by adding the people who will appear in the book, then enter your title, age, and description. If you need help thinking of an idea, the optional Idea Generator below can build or randomize the concept for all of your added people.</p>
     <form id="bookForm">
       <div class="grid">
+        <div class="field full">
+          <label>People</label>
+          <div class="help" style="margin-bottom:4px">Start by adding everyone who should appear in the book. Each person needs a name and an original photo.</div>
+          <div id="characters" class="characters"></div>
+          <div style="margin-top:10px"><button type="button" class="btn secondary small" id="addPerson">+ Add Another Person</button></div>
+        </div>
         <div class="field full"><label>Book title</label><input id="title" placeholder="Enter the coloring-book title" required /></div>
         <div class="field"><label>Target age</label><input id="age" type="number" min="3" max="17" placeholder="e.g. 5" required /></div>
         <div class="field"><label>Age guidance</label><div class="note" style="margin-top:0">Age 3–4 uses preschool-simple pages: extra-thick outlines, huge coloring spaces, very few objects, and lots of white space. Detail increases gradually for older kids and teens.</div></div>
@@ -66,21 +75,26 @@
           <div class="help"><b>Tip:</b> Be specific about the setting. Include rooms or locations, activities, important objects, creatures or side characters, and the mood/style. The generator will spread those details across different pages and adapt the complexity to the target age.</div>
           <div class="help" style="margin-top:8px;color:#7a5a00"><b>* Note:</b> Copyrighted material or other prohibited content may cause generation to fail. If it does, rewrite the description and try again.</div>
         </div>
-        <div class="field full">
-          <label>Characters</label>
-          <div id="characters" class="characters"></div>
-          <div style="margin-top:10px"><button type="button" class="btn secondary small" id="addPerson">+ Add Another Person</button></div>
-        </div>
       </div>
 
-      <div class="note" style="margin-top:18px;margin-bottom:14px"><b>Need an idea?</b> Use the Random Idea Helper for prompt assistance or a complete surprise. Enter any combination of the optional fields below, then click <b>Generate Random Idea</b>. Choose a tone or leave it on <b>Surprise Me</b>. If you leave everything blank, it creates a fully random name, age, subject, tone, title, and description.</div>
-      <div class="grid" style="margin-bottom:14px">
-        <div class="field"><label>Name (optional)</label><input id="ideaName" placeholder="e.g. Willy" /></div>
-        <div class="field"><label>Target age (optional)</label><input id="ideaAge" type="number" min="3" max="17" placeholder="e.g. 8" /></div>
-        <div class="field"><label>Subject (optional)</label><input id="ideaSubject" placeholder="e.g. robot" /></div>
-        <div class="field"><label>Tone (optional)</label><select id="ideaTone"><option value="">Surprise Me</option><option value="funny">Funny</option><option value="adventurous">Adventurous</option><option value="cute">Cute &amp; Gentle</option><option value="educational">Educational</option><option value="magical">Magical</option><option value="mysterious">Mysterious</option><option value="calm">Calm &amp; Cozy</option><option value="action">Action-Packed</option></select></div>
-        <div class="field full"><div class="row"><button class="btn secondary" id="randomIdea" type="button">Generate Random Idea</button><span class="help">This fills the live title, target age, Detailed Description, and the first character name.</span></div></div>
+      <div class="idea-helper" id="ideaHelper">
+        <div class="idea-helper-head">
+          <div>
+            <span class="idea-chip">Optional Idea Generator</span>
+            <h3>Need inspiration? Build the idea for me.</h3>
+            <p>Use this if you need help developing a prompt or just want something completely random. The name fields below automatically match the number of people you added above. Fill in anything you want to keep and leave anything blank to randomize it.</p>
+          </div>
+        </div>
+        <div id="ideaNames" class="idea-name-grid"></div>
+        <div class="grid">
+          <div class="field"><label>Target age (optional)</label><input id="ideaAge" type="number" min="3" max="17" placeholder="e.g. 8" /></div>
+          <div class="field"><label>Subject (optional)</label><input id="ideaSubject" placeholder="e.g. robot" /></div>
+          <div class="field"><label>Tone (optional)</label><select id="ideaTone"><option value="">Surprise Me</option><option value="funny">Funny</option><option value="adventurous">Adventurous</option><option value="cute">Cute &amp; Gentle</option><option value="educational">Educational</option><option value="magical">Magical</option><option value="mysterious">Mysterious</option><option value="calm">Calm &amp; Cozy</option><option value="action">Action-Packed</option></select></div>
+          <div class="field" style="justify-content:end"><button class="btn" id="randomIdea" type="button">Generate Random Idea</button></div>
+        </div>
+        <div class="help" style="margin-top:10px">The generator fills the main people names, title, target age, and Detailed Description. With multiple people, their names are combined naturally in the generated title.</div>
       </div>
+
       <div class="note">Automatic live PDF layout: cover · blank page · 8 coloring pages · 2 blank pages = <b>12 true US Letter pages</b>.</div>
       <div class="actions"><button class="btn" id="generate" type="submit">Generate Live Book</button></div>
       <div class="error" id="error"></div>
@@ -100,7 +114,7 @@
   <section class="card" id="manualSection">
     <div class="section-kicker">3. Manual GPT</div>
     <h2>Manual ChatGPT fallback</h2>
-    <p class="sub">This does not use your website API credit. It builds two prompts from the title, target age, Detailed Description, and character names entered in the Live Generator above—including anything filled in by the Random Idea Helper and its selected tone. Every time you generate Prompt 1, the site also creates a new hidden <b>Book DNA</b> so repeated customer inputs are pushed toward a materially different 20-page scene sequence.</p>
+    <p class="sub">This does not use your website API credit. It builds two prompts from the title, target age, Detailed Description, and character names entered in the Live Generator above—including multiple character names, titles, descriptions, and tones filled in by the optional Idea Generator. Every time you generate Prompt 1, the site also creates a new hidden <b>Book DNA</b> so repeated customer inputs are pushed toward a materially different 20-page scene sequence.</p>
     <div class="fresh"><b>Fresh redesign + uniqueness rule:</b> every new artwork attempt should start in a brand-new ChatGPT conversation. Re-upload only the original source photos, then paste a newly generated Prompt 1. Each newly generated Prompt 1 contains a different Book DNA creative fingerprint. Do not reuse old AI artwork as a reference.</div>
     <div class="actions" style="margin-top:0;margin-bottom:14px"><button class="btn secondary" id="makePrompts" type="button">Generate ChatGPT Prompts</button><button class="btn secondary" id="differentPrompt" type="button">Generate Different Artwork Prompt</button></div>
     <div class="manual">
@@ -134,7 +148,7 @@ const galleryGrid=document.getElementById('galleryGrid');
 const download=document.getElementById('download');
 const generate=document.getElementById('generate');
 const randomIdeaBtn=document.getElementById('randomIdea');
-const ideaName=document.getElementById('ideaName');
+const ideaNames=document.getElementById('ideaNames');
 const ideaAge=document.getElementById('ideaAge');
 const ideaSubject=document.getElementById('ideaSubject');
 const ideaTone=document.getElementById('ideaTone');
@@ -168,8 +182,28 @@ function addCharacter(name=''){
   div.querySelector('.remove').onclick=()=>{if(chars.children.length>1){div.remove();renumber();}};
   chars.appendChild(div); renumber();
 }
-function renumber(){[...chars.children].forEach((el,i)=>{el.querySelector('label').textContent=`Person ${i+1} name`;el.querySelectorAll('label')[1].textContent=`Person ${i+1} photo`;el.querySelector('.remove').style.display=chars.children.length===1?'none':'block';});addPerson.disabled=chars.children.length>=4;}
+function syncIdeaNameFields(){
+  const current=[...ideaNames.querySelectorAll('.idea-name')].map(x=>x.value);
+  const people=[...chars.querySelectorAll('.pname')];
+  ideaNames.innerHTML='';
+  people.forEach((personInput,i)=>{
+    const wrap=document.createElement('div');wrap.className='field';
+    const label=people.length===1?'Name (optional)':`Name ${i+1} (optional)`;
+    const existing=current[i]!==undefined?current[i]:personInput.value.trim();
+    wrap.innerHTML=`<label>${label}</label><input class="idea-name" data-index="${i}" value="${existing}" placeholder="${people.length===1?'e.g. Willy':`Person ${i+1}`}" />`;
+    ideaNames.appendChild(wrap);
+    personInput.oninput=()=>{const helper=ideaNames.querySelector(`.idea-name[data-index="${i}"]`);if(helper && !helper.dataset.edited)helper.value=personInput.value;};
+    const helper=wrap.querySelector('.idea-name');
+    helper.addEventListener('input',()=>{helper.dataset.edited='1';});
+  });
+}
+function renumber(){
+  [...chars.children].forEach((el,i)=>{el.querySelector('label').textContent=`Person ${i+1} name`;el.querySelectorAll('label')[1].textContent=`Person ${i+1} photo`;el.querySelector('.remove').style.display=chars.children.length===1?'none':'block';});
+  addPerson.disabled=chars.children.length>=4;
+  syncIdeaNameFields();
+}
 addPerson.onclick=()=>addCharacter('');
+addCharacter('');
 addCharacter('');
 
 fetch('/api/config').then(r=>r.json()).then(c=>{apiConfigured=c.api_configured;}).catch(()=>{});
@@ -219,16 +253,19 @@ function validate(needPhotos=true){const f=readFields();if(!f.title||!f.descript
 async function fillRandomIdea(){
   error.style.display='none';
   try{
-    const r=await fetch('/api/random-book-idea',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:ideaName.value.trim(),age:ideaAge.value.trim(),subject:ideaSubject.value.trim(),tone:ideaTone.value})});
+    const names=[...ideaNames.querySelectorAll('.idea-name')].map(x=>x.value.trim());
+    const r=await fetch('/api/random-book-idea',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({names,age:ideaAge.value.trim(),subject:ideaSubject.value.trim(),tone:ideaTone.value})});
     const j=await r.json();
     if(!r.ok)throw new Error(j.detail||'Could not generate a random idea');
     document.getElementById('title').value=j.title||'';
     document.getElementById('age').value=j.age||'';
     document.getElementById('description').value=j.description||'';
-    if(!chars.children.length){addCharacter('');}
-    const firstName=chars.querySelector('.pname');
-    if(firstName)firstName.value=j.name||'';
-    ideaName.value=j.name||'';
+    const mainNames=[...chars.querySelectorAll('.pname')];
+    const helperNames=[...ideaNames.querySelectorAll('.idea-name')];
+    (j.names||[]).forEach((name,i)=>{
+      if(mainNames[i])mainNames[i].value=name;
+      if(helperNames[i]){helperNames[i].value=name;helperNames[i].dataset.edited='1';}
+    });
     ideaAge.value=j.age||'';
     ideaSubject.value=j.subject||'';
     ideaTone.value=j.tone||'';
