@@ -54,7 +54,7 @@
   <section class="card" id="liveSection">
     <div class="section-kicker">2. Live Generator</div>
     <h2>Create a live personalized book</h2>
-    <p class="sub">Upload one or more people and generate a live AI book. The automatic version creates a high-quality color cover plus 8 coloring pages, with individual medium-quality retries for weak interior pages.</p>
+    <p class="sub">Upload one or more people and generate a live AI book. Each generation receives a new hidden <b>Book DNA</b> creative fingerprint so identical customer inputs can still produce different story structure, scene order, activities, compositions, pacing, and visual motifs. The automatic version creates a high-quality color cover plus 8 coloring pages, with individual medium-quality retries for weak interior pages.</p>
     <form id="bookForm">
       <div class="grid">
         <div class="field full"><label>Book title</label><input id="title" placeholder="Enter the coloring-book title" required /></div>
@@ -91,13 +91,13 @@
   <section class="card" id="manualSection">
     <div class="section-kicker">3. Manual GPT</div>
     <h2>Manual ChatGPT fallback</h2>
-    <p class="sub">This does not use your website API credit. It builds two prompts from the title, target age, Detailed Description, and character names entered in the Live Generator above.</p>
-    <div class="fresh"><b>Fresh redesign rule:</b> every new artwork attempt should start in a brand-new ChatGPT conversation. Re-upload only the original source photos, then paste a newly generated Prompt 1. Do not reuse old AI artwork as a reference.</div>
+    <p class="sub">This does not use your website API credit. It builds two prompts from the title, target age, Detailed Description, and character names entered in the Live Generator above. Every time you generate Prompt 1, the site also creates a new hidden <b>Book DNA</b> so repeated customer inputs are pushed toward a materially different 20-page scene sequence.</p>
+    <div class="fresh"><b>Fresh redesign + uniqueness rule:</b> every new artwork attempt should start in a brand-new ChatGPT conversation. Re-upload only the original source photos, then paste a newly generated Prompt 1. Each newly generated Prompt 1 contains a different Book DNA creative fingerprint. Do not reuse old AI artwork as a reference.</div>
     <div class="actions" style="margin-top:0;margin-bottom:14px"><button class="btn secondary" id="makePrompts" type="button">Generate ChatGPT Prompts</button><button class="btn secondary" id="differentPrompt" type="button">Generate Different Artwork Prompt</button></div>
     <div class="manual">
       <div class="promptbox">
         <h3>Prompt 1 — Create artwork</h3>
-        <p>Start a NEW ChatGPT conversation, upload the original source photo(s), then paste this prompt. It creates 1 cover + 20 individual coloring pages and stops for review.</p>
+        <p>Start a NEW ChatGPT conversation, upload the original source photo(s), then paste this prompt. It contains a unique Book DNA for this attempt, creates 1 cover + 20 individual coloring pages, and stops for review.</p>
         <textarea id="prompt1" readonly placeholder="Click Generate ChatGPT Prompts"></textarea>
         <div class="actions"><button class="btn small" type="button" data-copy="prompt1">Copy Artwork Prompt</button></div>
       </div>
