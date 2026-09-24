@@ -40,7 +40,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 jobs: dict[str, dict] = {}
 jobs_lock = threading.Lock()
 
-APP_VERSION = "multi-person-random-clear-v9.5"
+APP_VERSION = "multi-person-standard-clear-v9.6"
 TEXT_MODEL = os.getenv("TEXT_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini"
 
 RNG = random.SystemRandom()
@@ -263,6 +263,245 @@ SUBJECT_BUNDLES = {
     },
 }
 
+# Subject-family bundles keep random descriptions grounded in the requested
+# idea instead of falling back to generic paths, creatures, backpacks, etc.
+# These are also used for synonyms recognized by title_subject_family().
+FAMILY_DESCRIPTION_BUNDLES = {
+    "cops_robbers": {
+        "world": "a lively, family-friendly city adventure built around a playful cops-and-robbers chase",
+        "locations": [
+            "a police station briefing room",
+            "a downtown street",
+            "a city park",
+            "a parking garage",
+            "a bridge checkpoint",
+            "a neighborhood alley with clear clues",
+            "a safe roadblock scene",
+            "a final return to the police station",
+        ],
+        "props": [
+            "badges",
+            "walkie-talkies",
+            "clue cards",
+            "traffic cones",
+            "a city map",
+            "a silly bag of recovered loot",
+        ],
+        "activities": [
+            "starting a patrol",
+            "spotting a goofy robber making a getaway",
+            "following footprints and visual clues",
+            "checking a city map for the next stop",
+            "setting up a safe roadblock",
+            "recovering the missing loot",
+            "bringing the chase to a nonviolent conclusion",
+            "celebrating a successful case at the station",
+        ],
+        "helpers": "friendly police officers, dispatchers, and goofy non-threatening robbers",
+        "mood": "fast-moving, playful, and suspenseful without violence",
+    },
+    "detective": {
+        "world": "a kid-friendly mystery spread across a town full of clues and suspects",
+        "locations": [
+            "a detective desk",
+            "a library",
+            "a park",
+            "a small shop",
+            "a train station",
+            "a clue-filled alley",
+            "a hidden room",
+            "a final reveal scene",
+        ],
+        "props": [
+            "magnifying glasses",
+            "notebooks",
+            "clue cards",
+            "maps",
+            "flashlights",
+            "evidence envelopes",
+        ],
+        "activities": [
+            "examining the first clue",
+            "interviewing a friendly witness",
+            "following footprints",
+            "matching clues on a map",
+            "searching a room",
+            "solving a puzzle",
+            "revealing the answer",
+        ],
+        "helpers": "friendly witnesses, shopkeepers, and fellow junior detectives",
+        "mood": "curious, clever, and suspenseful",
+    },
+    "robots": SUBJECT_BUNDLES["robots"],
+    "dinosaurs": SUBJECT_BUNDLES["dinosaurs"],
+    "pirates": SUBJECT_BUNDLES["pirates"],
+    "space": SUBJECT_BUNDLES["space"],
+    "bigfoot": SUBJECT_BUNDLES["bigfoot"],
+    "superhero": SUBJECT_BUNDLES["superheroes"],
+    "petting_zoo": SUBJECT_BUNDLES["petting zoo"],
+    "construction": {
+        "world": "a busy construction site with large machines, workers, and projects taking shape",
+        "locations": [
+            "a construction entrance",
+            "an excavation pit",
+            "a crane zone",
+            "a concrete pour",
+            "a lumber area",
+            "a roadwork section",
+            "a nearly finished building",
+            "a ribbon-cutting scene",
+        ],
+        "props": [
+            "hard hats",
+            "cones",
+            "blueprints",
+            "tool boxes",
+            "safety signs",
+            "measuring tapes",
+        ],
+        "activities": [
+            "meeting the construction crew",
+            "watching an excavator dig",
+            "helping read a blueprint",
+            "moving materials",
+            "guiding a crane load",
+            "checking the finished work",
+            "celebrating the completed project",
+        ],
+        "helpers": "friendly construction workers and machine operators",
+        "mood": "busy, hands-on, and energetic",
+    },
+    "ocean": {
+        "world": "an underwater and seaside adventure filled with ocean life and places to explore",
+        "locations": [
+            "a beach launch point",
+            "a coral reef",
+            "a kelp forest",
+            "a sunken ship",
+            "a sea-cave entrance",
+            "a dolphin-filled open-water scene",
+            "a rescue boat",
+            "a sunset harbor",
+        ],
+        "props": [
+            "snorkel gear",
+            "diving masks",
+            "shells",
+            "buoys",
+            "rescue ropes",
+            "underwater flashlights",
+        ],
+        "activities": [
+            "exploring a reef",
+            "meeting sea animals",
+            "searching a sunken ship",
+            "collecting shells",
+            "helping with an ocean rescue",
+            "following an underwater trail",
+            "returning safely to shore",
+        ],
+        "helpers": "friendly sea animals, divers, and rescue-boat crew members",
+        "mood": "wonder-filled, adventurous, and lively",
+    },
+    "magic": {
+        "world": "a magical school-and-castle adventure filled with spells, strange rooms, and whimsical discoveries",
+        "locations": [
+            "a grand magical entrance",
+            "a spell classroom",
+            "a potion room",
+            "an enchanted library",
+            "a moving staircase",
+            "a hidden garden",
+            "a tower room",
+            "a magical celebration hall",
+        ],
+        "props": [
+            "spell books",
+            "wands",
+            "potion bottles",
+            "keys",
+            "scrolls",
+            "magical lanterns",
+        ],
+        "activities": [
+            "learning a simple spell",
+            "mixing a harmless potion",
+            "finding a secret book",
+            "following a magical clue",
+            "helping a whimsical creature",
+            "solving an enchanted puzzle",
+            "celebrating a successful lesson",
+        ],
+        "helpers": "friendly teachers, magical creatures, and fellow students",
+        "mood": "whimsical, mysterious, and magical",
+    },
+    "sports": {
+        "world": "a sports adventure that moves through practice, game-day action, and celebration",
+        "locations": [
+            "a practice field",
+            "a locker room",
+            "a warm-up area",
+            "the sideline",
+            "the main field or court",
+            "a halftime huddle",
+            "the scoreboard area",
+            "a post-game celebration",
+        ],
+        "props": [
+            "balls",
+            "cones",
+            "uniforms",
+            "water bottles",
+            "scoreboards",
+            "practice equipment",
+        ],
+        "activities": [
+            "warming up",
+            "practicing a skill",
+            "working with teammates",
+            "making a big play",
+            "encouraging a teammate",
+            "finishing the game",
+            "celebrating together",
+        ],
+        "helpers": "teammates, coaches, referees, and cheering fans",
+        "mood": "energetic, competitive, and positive",
+    },
+    "camping": {
+        "world": "an outdoor camping trip through woods, trails, a campsite, and scenic nature stops",
+        "locations": [
+            "a campsite",
+            "a hiking trail",
+            "a creek crossing",
+            "a fishing spot",
+            "a picnic area",
+            "a tent at dusk",
+            "a campfire circle",
+            "a starry-night overlook",
+        ],
+        "props": [
+            "tents",
+            "backpacks",
+            "lanterns",
+            "camping chairs",
+            "maps",
+            "marshmallow sticks",
+        ],
+        "activities": [
+            "setting up a tent",
+            "hiking a trail",
+            "crossing a creek",
+            "preparing a camp meal",
+            "watching wildlife",
+            "sitting around a campfire",
+            "looking at the stars",
+        ],
+        "helpers": "camping friends, park rangers, and woodland animals",
+        "mood": "outdoorsy, cozy, and adventurous",
+    },
+}
+
+
 GENERIC_WORLD_OPTIONS = [
     "a bright themed world full of fun places to explore",
     "a playful adventure setting with several distinct locations",
@@ -306,19 +545,131 @@ RANDOM_IDEA_TONE_LABELS = {
     "action": "Action-Packed",
 }
 
-TITLE_TEMPLATES_SINGLE = [
-    "{people} and the {subject_title} Adventure",
-    "{people} Explores the {subject_title} World",
-    "{people} Visits the {subject_title} Kingdom",
-    "{people}'s {subject_title} Journey",
+# Title generation deliberately avoids forcing every subject into "World" or
+# "Kingdom".  The randomizer first looks for a subject family and then chooses
+# titles that sound natural for that kind of idea.
+TITLE_PATTERNS = {
+    "cops_robbers": [
+        "{people}: Cops and Robbers",
+        "{people} and the Great Chase",
+        "{people} on Patrol",
+        "{people} and the Great Getaway",
+        "{people}: The Missing Loot Mystery",
+        "{people} and the Crook-Catching Crew",
+    ],
+    "detective": [
+        "{people}: The Great Mystery",
+        "{people} Crack the Case",
+        "{people} and the Hidden Clue",
+        "{people}: Junior Detectives",
+        "{people} and the Mystery Trail",
+    ],
+    "robots": [
+        "{people} and the Robot City",
+        "{people}: Robot Rescue",
+        "{people} Build a Bot",
+        "{people} and the Robot Race",
+        "{people}: Mission Robot",
+    ],
+    "dinosaurs": [
+        "{people} and the Dinosaur Kingdom",
+        "{people} in Dinosaur Valley",
+        "{people}: Dinosaur Discovery",
+        "{people} and the Lost Dinosaur Trail",
+        "{people}'s Dinosaur Adventure",
+    ],
+    "pirates": [
+        "{people} and the Treasure Map",
+        "{people}: Pirate Adventure",
+        "{people} and the Hidden Treasure",
+        "{people} Sail the Pirate Seas",
+        "{people} and the Secret Island",
+    ],
+    "space": [
+        "{people} Blast Off!",
+        "{people}: Space Adventure",
+        "{people} Explore the Stars",
+        "{people} and the Moon Mission",
+        "{people} Across the Galaxy",
+    ],
+    "bigfoot": [
+        "{people} Meet Bigfoot",
+        "{people} and the Friendly Bigfoot",
+        "{people}: Bigfoot Adventure",
+        "{people} Explore Bigfoot's Forest",
+        "{people} and the Hidden Forest Trail",
+    ],
+    "superhero": [
+        "{people} Save the Day",
+        "{people}: Superhero Adventure",
+        "{people} to the Rescue!",
+        "{people} and the Hero Mission",
+        "{people}: Heroes in Action",
+    ],
+    "petting_zoo": [
+        "{people} Visit the Petting Zoo",
+        "{people}'s Petting Zoo Day",
+        "{people} Meet the Farm Animals",
+        "{people}: A Day at the Petting Zoo",
+        "{people} and the Friendly Farm Animals",
+    ],
+    "construction": [
+        "{people} at the Construction Site",
+        "{people}: Big Trucks at Work",
+        "{people} Build Something Big",
+        "{people} and the Mighty Machines",
+        "{people}'s Construction Adventure",
+    ],
+    "ocean": [
+        "{people} Under the Sea",
+        "{people}: Ocean Adventure",
+        "{people} Explore the Deep",
+        "{people} and the Underwater Rescue",
+        "{people} Discover the Ocean",
+    ],
+    "magic": [
+        "{people} and the Magical Adventure",
+        "{people}: A Day of Magic",
+        "{people} and the Enchanted Journey",
+        "{people} Discover a Magical World",
+        "{people} and the Secret Spell",
+    ],
+    "sports": [
+        "{people}: Game Day",
+        "{people} Take the Field",
+        "{people}'s Big Game",
+        "{people}: Ready, Set, Play!",
+        "{people} and the Championship Challenge",
+    ],
+    "camping": [
+        "{people}: Camping Adventure",
+        "{people} Under the Stars",
+        "{people} and the Great Campout",
+        "{people}: A Night at Camp",
+        "{people} Explore the Great Outdoors",
+    ],
+}
+
+GENERIC_ACTIVITY_TITLES = [
+    "{people}: {subject_title}",
+    "{people}'s {subject_title} Adventure",
+    "{people} and the {subject_title} Challenge",
+    "{people}: A Day of {subject_title}",
+    "{people}: The {subject_title} Experience",
 ]
 
-TITLE_TEMPLATES_MULTI = [
-    "{people}: The {subject_title} Adventure",
-    "{people} Explore the {subject_title} World",
-    "{people} Visit the {subject_title} Kingdom",
-    "{people} Take On a {subject_title} Adventure",
+GENERIC_PLACE_TITLES = [
+    "{people}: Exploring {subject_title}",
+    "{people}: An Adventure in {subject_title}",
+    "{people}: A Trip to {subject_title}",
+    "{people} and the Secrets of {subject_title}",
+    "{people}'s Adventure in {subject_title}",
 ]
+
+FANTASY_PLACE_WORDS = {
+    "kingdom", "castle", "fairy", "fairies", "dragon", "dragons",
+    "enchanted", "magic", "magical", "princess", "knight", "knights",
+}
 
 
 def subject_key(subject: str) -> str:
@@ -347,18 +698,26 @@ def pick_subject_bundle(subject: str) -> tuple[str, dict]:
     raw = (subject or "").strip()
     generated_subject = raw or RNG.choice(RANDOM_IDEA_SUBJECTS)
     key = subject_key(generated_subject)
+
     if key in SUBJECT_BUNDLES:
         return generated_subject, SUBJECT_BUNDLES[key]
+
     singular = key[:-1] if key.endswith("s") else key
     if singular in SUBJECT_BUNDLES:
         return generated_subject, SUBJECT_BUNDLES[singular]
+
+    # Reuse the same subject-family recognition used by the smarter title system.
+    family = title_subject_family(generated_subject)
+    if family and family in FAMILY_DESCRIPTION_BUNDLES:
+        return generated_subject, FAMILY_DESCRIPTION_BUNDLES[family]
+
     locations = RNG.sample(GENERIC_LOCATION_POOL, k=min(6, len(GENERIC_LOCATION_POOL)))
     bundle = {
-        "world": f"a {generated_subject} themed world with several fun places to explore" if generated_subject else RNG.choice(GENERIC_WORLD_OPTIONS),
+        "world": f"a {generated_subject} themed adventure with several distinct settings and activities",
         "locations": locations,
         "props": RNG.sample(GENERIC_PROP_POOL, k=4),
         "activities": RNG.sample(GENERIC_ACTIVITY_POOL, k=5),
-        "helpers": RNG.choice(GENERIC_HELPER_POOL),
+        "helpers": "supporting characters that naturally fit the requested subject",
         "mood": RNG.choice(GENERIC_MOOD_POOL),
     }
     return generated_subject, bundle
@@ -382,10 +741,73 @@ def format_people(names: list[str]) -> str:
     return ", ".join(clean[:-1]) + f", and {clean[-1]}"
 
 
+def title_subject_family(subject: str) -> str | None:
+    key = subject_key(subject)
+    words = set(key.replace("-", " ").split())
+
+    if ({"cop", "cops", "police"} & words) and ({"robber", "robbers", "crook", "crooks"} & words):
+        return "cops_robbers"
+    if {"detective", "detectives", "mystery", "mysteries"} & words:
+        return "detective"
+    if {"robot", "robots", "android", "androids"} & words:
+        return "robots"
+    if {"dinosaur", "dinosaurs", "dino", "dinos"} & words:
+        return "dinosaurs"
+    if {"pirate", "pirates"} & words:
+        return "pirates"
+    if {"space", "rocket", "rockets", "astronaut", "astronauts", "galaxy"} & words:
+        return "space"
+    if "bigfoot" in key or "sasquatch" in key:
+        return "bigfoot"
+    if {"superhero", "superheroes", "hero", "heroes"} & words:
+        return "superhero"
+    if "petting zoo" in key or ({"farm", "barn"} & words and {"animal", "animals"} & words):
+        return "petting_zoo"
+    if {"construction", "bulldozer", "bulldozers", "excavator", "excavators"} & words or "construction truck" in key:
+        return "construction"
+    if {"ocean", "underwater", "mermaid", "mermaids", "sea"} & words:
+        return "ocean"
+    if {"fairy", "fairies", "magic", "magical", "wizard", "wizards"} & words:
+        return "magic"
+    if {"baseball", "soccer", "football", "basketball", "hockey", "sports", "sport"} & words:
+        return "sports"
+    if {"camping", "camp", "campout"} & words:
+        return "camping"
+    return None
+
+
+def subject_is_place_like(subject: str) -> bool:
+    key = subject_key(subject)
+    place_words = {
+        "zoo", "park", "museum", "farm", "beach", "forest", "jungle", "city",
+        "school", "circus", "carnival", "aquarium", "north pole",
+        "pyramids", "egypt", "moon", "mars", "island", "islands",
+    }
+    words = set(key.replace("-", " ").split())
+    return bool(words & place_words)
+
+
 def random_book_title(names: list[str], subject: str) -> str:
     subject_title = humanize_subject(subject)
     people = format_people(names)
-    templates = TITLE_TEMPLATES_SINGLE if len(names) == 1 else TITLE_TEMPLATES_MULTI
+    family = title_subject_family(subject)
+
+    if family and family in TITLE_PATTERNS:
+        template = RNG.choice(TITLE_PATTERNS[family])
+        return template.format(people=people, subject_title=subject_title)
+
+    # "Kingdom" is reserved for themes where it actually makes sense.
+    key_words = set(subject_key(subject).replace("-", " ").split())
+    if key_words & FANTASY_PLACE_WORDS:
+        fantasy_templates = [
+            "{people} and the {subject_title} Kingdom",
+            "{people}: The {subject_title} Adventure",
+            "{people} Explore the {subject_title} Realm",
+            "{people} and the Enchanted {subject_title}",
+        ]
+        return RNG.choice(fantasy_templates).format(people=people, subject_title=subject_title)
+
+    templates = GENERIC_PLACE_TITLES if subject_is_place_like(subject) else GENERIC_ACTIVITY_TITLES
     return RNG.choice(templates).format(people=people, subject_title=subject_title)
 
 
@@ -431,7 +853,7 @@ def build_random_description(names: list[str], age: int, subject: str, bundle: d
 
     if bucket == "early":
         return (
-            f"Create a playful {subject_phrase} adventure for {people}. Set it in {world}. "
+            f"Create a playful coloring-book adventure for {people}, built around {subject_phrase}. Set it in {world}. "
             f"Show different locations such as {locations[0]}, {locations[1]}, {locations[2]}, {locations[3]}, and {locations[4]}. "
             f"Include {helpers}, props like {props[0]}, {props[1]}, and {props[2]}, and activities such as {activities[0]}, {activities[1]}, {activities[2]}, {activities[3]}, and {activities[4]}. "
             f"Keep the tone {mood}, with a clear beginning, middle, and happy ending."
@@ -439,7 +861,7 @@ def build_random_description(names: list[str], age: int, subject: str, bundle: d
 
     if bucket in {"middle", "upper"}:
         return (
-            f"Create a detailed, kid-friendly {subject_phrase} adventure starring {people}. Set the story in {world}. "
+            f"Create a detailed, kid-friendly coloring-book adventure starring {people}, built around {subject_phrase}. Set the story in {world}. "
             f"Spread the pages across varied places such as {locations[0]}, {locations[1]}, {locations[2]}, {locations[3]}, {locations[4]}, and {locations[5]}. "
             f"Include {helpers}, useful props like {props[0]}, {props[1]}, {props[2]}, and {props[3]}, and show activities like {activities[0]}, {activities[1]}, {activities[2]}, {activities[3]}, and {activities[4]}. "
             f"Keep the tone {mood} and make the pages visually varied from one another."
