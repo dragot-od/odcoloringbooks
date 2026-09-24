@@ -56,14 +56,6 @@
     <h2>Create a live personalized book</h2>
     <p class="sub">Upload one or more people and generate a live AI book. Each generation receives a new hidden <b>Book DNA</b> creative fingerprint so identical customer inputs can still produce different story structure, scene order, activities, compositions, pacing, and visual motifs. The automatic version creates a high-quality color cover plus 8 coloring pages, with individual medium-quality retries for weak interior pages. If you need help thinking of an idea, use the Random Idea Helper below to choose or randomize a tone and auto-fill the title, age, description, and first character name.</p>
     <form id="bookForm">
-      <div class="note" style="margin-bottom:14px"><b>Need an idea?</b> Use the Random Idea Helper for prompt assistance or a complete surprise. Enter any combination of the optional fields below, then click <b>Generate Random Idea</b>. It will refill the live fields for you. Choose a tone or leave it on <b>Surprise Me</b>. If you leave everything blank, it creates a fully random name, age, subject, tone, title, and description.</div>
-      <div class="grid" style="margin-bottom:14px">
-        <div class="field"><label>Random helper name (optional)</label><input id="ideaName" placeholder="Leave blank for a random name" /></div>
-        <div class="field"><label>Random helper target age (optional)</label><input id="ideaAge" type="number" min="3" max="17" placeholder="Leave blank for a random age" /></div>
-        <div class="field"><label>Random helper subject (optional)</label><input id="ideaSubject" placeholder="e.g. robot — blank = random" /></div>
-        <div class="field"><label>Tone</label><select id="ideaTone"><option value="">Surprise Me</option><option value="funny">Funny</option><option value="adventurous">Adventurous</option><option value="cute">Cute &amp; Gentle</option><option value="educational">Educational</option><option value="magical">Magical</option><option value="mysterious">Mysterious</option><option value="calm">Calm &amp; Cozy</option><option value="action">Action-Packed</option></select></div>
-        <div class="field full"><div class="row"><button class="btn secondary" id="randomIdea" type="button">Generate Random Idea</button><span class="help">This fills the live title, target age, Detailed Description, and the first character name.</span></div></div>
-      </div>
       <div class="grid">
         <div class="field full"><label>Book title</label><input id="title" placeholder="Enter the coloring-book title" required /></div>
         <div class="field"><label>Target age</label><input id="age" type="number" min="3" max="17" placeholder="e.g. 5" required /></div>
@@ -79,6 +71,15 @@
           <div id="characters" class="characters"></div>
           <div style="margin-top:10px"><button type="button" class="btn secondary small" id="addPerson">+ Add Another Person</button></div>
         </div>
+      </div>
+
+      <div class="note" style="margin-top:18px;margin-bottom:14px"><b>Need an idea?</b> Use the Random Idea Helper for prompt assistance or a complete surprise. Enter any combination of the optional fields below, then click <b>Generate Random Idea</b>. Choose a tone or leave it on <b>Surprise Me</b>. If you leave everything blank, it creates a fully random name, age, subject, tone, title, and description.</div>
+      <div class="grid" style="margin-bottom:14px">
+        <div class="field"><label>Name (optional)</label><input id="ideaName" placeholder="e.g. Willy" /></div>
+        <div class="field"><label>Target age (optional)</label><input id="ideaAge" type="number" min="3" max="17" placeholder="e.g. 8" /></div>
+        <div class="field"><label>Subject (optional)</label><input id="ideaSubject" placeholder="e.g. robot" /></div>
+        <div class="field"><label>Tone (optional)</label><select id="ideaTone"><option value="">Surprise Me</option><option value="funny">Funny</option><option value="adventurous">Adventurous</option><option value="cute">Cute &amp; Gentle</option><option value="educational">Educational</option><option value="magical">Magical</option><option value="mysterious">Mysterious</option><option value="calm">Calm &amp; Cozy</option><option value="action">Action-Packed</option></select></div>
+        <div class="field full"><div class="row"><button class="btn secondary" id="randomIdea" type="button">Generate Random Idea</button><span class="help">This fills the live title, target age, Detailed Description, and the first character name.</span></div></div>
       </div>
       <div class="note">Automatic live PDF layout: cover · blank page · 8 coloring pages · 2 blank pages = <b>12 true US Letter pages</b>.</div>
       <div class="actions"><button class="btn" id="generate" type="submit">Generate Live Book</button></div>
