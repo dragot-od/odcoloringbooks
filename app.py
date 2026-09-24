@@ -40,8 +40,203 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 jobs: dict[str, dict] = {}
 jobs_lock = threading.Lock()
 
-APP_VERSION = "three-section-pure-demo-v8.1"
+APP_VERSION = "book-dna-uniqueness-v9.0"
 TEXT_MODEL = os.getenv("TEXT_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini"
+
+RNG = random.SystemRandom()
+
+# Hidden creative variables used to make two books with the same customer inputs
+# take materially different creative paths before any image generation begins.
+STORY_STRUCTURES = [
+    "guided expedition through a changing world",
+    "discovery trail where each scene reveals a new surprise",
+    "light quest built around reaching a memorable destination",
+    "day-in-the-life adventure with escalating unusual moments",
+    "friendly mystery solved through visual clues and discoveries",
+    "skill-building journey where each stop introduces a different activity",
+    "festival or special-event journey moving through distinct locations",
+    "rescue-and-helping adventure focused on teamwork",
+    "map-led exploration with a different destination on each stop",
+    "collection quest where the character finds a series of themed objects",
+    "before-during-after adventure with a clear visual progression",
+    "unexpected detour story where each new place changes the plan",
+]
+
+OPENING_SITUATIONS = [
+    "arriving at the edge of the themed world and deciding where to go first",
+    "discovering an unusual clue or object that starts the adventure",
+    "being welcomed by a friendly guide or helper",
+    "stepping through an entrance, gate, trail, portal, doorway, or other clear threshold",
+    "beginning with a hands-on activity that leads naturally into exploration",
+    "starting during a cheerful event or busy moment already in progress",
+    "finding a map, sign, invitation, tool, or keepsake that suggests the first destination",
+    "noticing something surprising in the distance and setting off to investigate",
+    "meeting a friendly creature or supporting character who needs help",
+    "beginning in a calm familiar place before the themed adventure expands outward",
+]
+
+ACTIVITY_EMPHASES = [
+    "exploration and discovery",
+    "helping and teamwork",
+    "hands-on making and building",
+    "games, play, and friendly challenges",
+    "observation, learning, and collecting clues",
+    "travel between distinct locations",
+    "caregiving and friendly interaction",
+    "problem solving and practical tasks",
+    "performance, celebration, and playful participation",
+    "nature, animals, and outdoor discovery",
+    "food, crafts, and everyday activities inside the themed world",
+    "movement, sports, and energetic action",
+]
+
+RECURRING_MOTIFS = [
+    "a small map that appears naturally in several scenes",
+    "a backpack or satchel used differently across the adventure",
+    "a friendly recurring animal or helper appearing occasionally",
+    "a simple collectible token or keepsake discovered along the way",
+    "a trail of signs, markers, or visual clues linking locations",
+    "a favorite tool or activity prop that changes purpose from scene to scene",
+    "a playful visual shape or symbol repeated subtly in the environment",
+    "a recurring snack, gift, or object exchanged with supporting characters",
+    "a notebook or sketchbook used during discoveries",
+    "a small flag, badge, ribbon, or sticker marking accomplishments",
+    "a recurring vehicle or mode of travel",
+    "a themed hat, scarf, or accessory used as a visual thread",
+]
+
+PACING_PATTERNS = [
+    "quiet discovery → active play → problem solving → celebration",
+    "active opening → calmer exploration → bigger challenge → warm ending",
+    "curious opening → several increasingly adventurous stops → peaceful finale",
+    "small-scale activity → wider exploration → close interaction → energetic finish",
+    "alternating calm and energetic scenes throughout the book",
+    "steady exploration with one surprising high-energy scene near the middle",
+    "progressively larger environments followed by an intimate final moment",
+    "varied episodic pacing with no two adjacent scenes having the same energy",
+]
+
+SUPPORTING_DYNAMICS = [
+    "friendly guides who appear only when useful to the scene",
+    "different supporting creatures or helpers at different stops",
+    "one recurring helper plus several one-scene supporting characters",
+    "mostly independent exploration with occasional friendly encounters",
+    "teamwork moments balanced with solo discovery",
+    "supporting characters who introduce activities rather than dominate the scene",
+    "a rotating cast of helpers tied to each specific location",
+    "environmental storytelling with only a few supporting characters",
+]
+
+ENDING_TYPES = [
+    "a proud accomplishment at a scenic destination",
+    "a cheerful group celebration tied to the adventure",
+    "a calm sunset or end-of-day reflection with a treasured keepsake",
+    "a final discovery that visually echoes the opening scene",
+    "a playful victory or completed challenge",
+    "a warm goodbye to new friends before heading home",
+    "a final panoramic view showing how far the adventure traveled",
+    "a quiet satisfied moment after completing a meaningful task",
+    "a celebratory photo-like moment without becoming a stiff posed portrait",
+    "an open-ended final scene suggesting another adventure could follow",
+]
+
+PAGE_ACTION_ARCHETYPES = [
+    "entering or arriving", "meeting or greeting", "searching or discovering", "building or making",
+    "feeding or caring", "riding or traveling", "playing a game", "solving a practical problem",
+    "learning or observing", "helping a supporting character", "crossing an obstacle", "using a map or clue",
+    "sharing food or a craft", "performing or celebrating", "exploring an indoor location", "exploring an outdoor location",
+    "repairing or organizing", "collecting or sorting", "practicing a skill", "resting or reflecting",
+    "following a trail", "working as a team", "reacting to a surprise", "completing a final challenge",
+]
+
+PAGE_COMPOSITION_CUES = [
+    "wide establishing view", "medium three-quarter interaction", "close character-and-prop moment", "side-view action",
+    "slightly overhead activity view", "low-angle adventurous view", "foreground object framing the action", "doorway or arch framing the scene",
+    "path or road leading into the scene", "diagonal movement across the page", "character offset with environment emphasized", "balanced two-subject composition",
+    "near-far depth with a landmark behind", "seated or kneeling interaction", "walking-toward-viewer composition", "walking-away-into-the-world composition",
+    "object-discovery close view", "large environmental feature with smaller character", "character-centered scene with sparse setting", "layered landscape composition",
+    "activity table or workbench composition", "bridge, fence, or railing defining depth", "curving trail or shoreline composition", "celebratory final-page composition",
+]
+
+PAGE_ENERGY_CUES = [
+    "calm and curious", "playful and light", "active but readable", "focused and purposeful",
+    "warm and social", "surprising and delighted", "adventurous and energetic", "quietly proud",
+]
+
+PRESCHOOL_ACTION_ARCHETYPES = [
+    "arriving or waving hello", "petting or gently touching", "feeding or caring", "walking or following",
+    "looking at or discovering", "holding or carrying one simple prop", "playing one simple game", "helping with one simple task",
+    "sitting or kneeling together", "pointing at something interesting", "sharing a snack or object", "celebrating one small accomplishment",
+]
+
+PRESCHOOL_COMPOSITION_CUES = [
+    "simple centered interaction", "simple side-view action", "two large subjects with open space", "one large foreground subject and one simple background landmark",
+    "kneeling interaction with a sparse setting", "standing interaction with a sparse setting", "simple walking scene", "simple seated scene",
+    "large character shapes with one clear prop", "simple fence or path defining the setting", "simple indoor scene with two or three large objects", "simple outdoor scene with two or three large objects",
+]
+
+
+def generate_book_dna(age: int, page_count: int = 8) -> dict:
+    """Create a high-entropy hidden creative fingerprint for one book generation."""
+    def sample_cycle(pool: list[str], count: int) -> list[str]:
+        values = list(pool)
+        RNG.shuffle(values)
+        while len(values) < count:
+            extra = list(pool)
+            RNG.shuffle(extra)
+            values.extend(extra)
+        return values[:count]
+
+    action_pool = PRESCHOOL_ACTION_ARCHETYPES if age <= 4 else PAGE_ACTION_ARCHETYPES
+    composition_pool = PRESCHOOL_COMPOSITION_CUES if age <= 4 else PAGE_COMPOSITION_CUES
+    actions = sample_cycle(action_pool, page_count)
+    compositions = sample_cycle(composition_pool, page_count)
+    energies = sample_cycle(PAGE_ENERGY_CUES, page_count)
+    recipes = [
+        {
+            "page": i + 1,
+            "action": actions[i],
+            "composition": compositions[i],
+            "energy": energies[i],
+        }
+        for i in range(page_count)
+    ]
+    return {
+        "id": uuid.uuid4().hex[:10],
+        "story_structure": RNG.choice(STORY_STRUCTURES),
+        "opening_situation": RNG.choice(OPENING_SITUATIONS),
+        "activity_emphasis": RNG.choice(ACTIVITY_EMPHASES),
+        "recurring_motif": RNG.choice(RECURRING_MOTIFS),
+        "pacing_pattern": RNG.choice(PACING_PATTERNS),
+        "supporting_dynamic": RNG.choice(SUPPORTING_DYNAMICS),
+        "ending_type": RNG.choice(ENDING_TYPES),
+        "mood": RNG.choice(MOODS),
+        "cover_composition": RNG.choice(COVER_COMPOSITIONS),
+        "page_recipes": recipes,
+        "target_age": age,
+    }
+
+
+def book_dna_text(dna: dict, include_recipes: bool = True) -> str:
+    lines = [
+        f"Creative fingerprint ID: {dna['id']}",
+        f"Story structure: {dna['story_structure']}",
+        f"Opening situation: {dna['opening_situation']}",
+        f"Activity emphasis: {dna['activity_emphasis']}",
+        f"Recurring visual motif: {dna['recurring_motif']}",
+        f"Pacing pattern: {dna['pacing_pattern']}",
+        f"Supporting-character dynamic: {dna['supporting_dynamic']}",
+        f"Ending type: {dna['ending_type']}",
+        f"Overall mood: {dna['mood']}",
+        f"Cover composition: {dna['cover_composition']}",
+    ]
+    if include_recipes:
+        lines.append("Page-by-page creative recipes:")
+        for recipe in dna["page_recipes"]:
+            lines.append(
+                f"- Page {recipe['page']}: action={recipe['action']}; composition={recipe['composition']}; energy={recipe['energy']}"
+            )
+    return "\n".join(lines)
 
 COPYRIGHT_SAFETY = (
     "Use only original, generic imagery. Do not include or closely imitate copyrighted characters, "
@@ -345,26 +540,35 @@ def _extract_json_object(raw: str) -> dict:
     return json.loads(raw[start:end+1])
 
 
-def fallback_scene_plan(names: list[str], description: str, assignments: list[dict], age: int) -> dict:
+def fallback_scene_plan(names: list[str], description: str, assignments: list[dict], age: int, book_dna: dict) -> dict:
     people = ", ".join(names)
     cover_brief = (
         f"A highly creative personalized children's-book cover for {age_label(age)} showing {people} in a scene that clearly expresses this detailed description: {description}. "
-        f"Use a fresh composition, strong sense of place, expressive faces, layered foreground/midground/background detail, and a clear family-friendly storybook feel."
+        f"Follow this unique creative fingerprint: story structure={book_dna['story_structure']}; opening={book_dna['opening_situation']}; "
+        f"motif={book_dna['recurring_motif']}; mood={book_dna['mood']}; cover composition={book_dna['cover_composition']}. "
+        f"Use a fresh composition, strong sense of place, expressive faces, and a clear family-friendly storybook feel."
     )
     pages = []
     for i, assignment in enumerate(assignments, start=1):
         selected = [names[x] for x in assignment["indices"]]
         who = selected[0] if len(selected) == 1 else " and ".join(selected)
+        recipe = book_dna["page_recipes"][i - 1]
         pages.append({
             "page": i,
-            "brief": f"Page {i} should feature {who} in {SCENE_DIRECTIONS[i-1]}, strongly grounded in this detailed description: {description}. Show a specific location and clear action. Complexity must strictly suit {age_label(age)}; for preschool ages, use only a few large background elements and no decorative clutter."
+            "brief": (
+                f"Page {i} should feature {who} in a specific location from the Detailed Description. "
+                f"Creative recipe: {recipe['action']}; {recipe['composition']}; {recipe['energy']}. "
+                f"Use the book's recurring motif ({book_dna['recurring_motif']}) only when it fits naturally. "
+                f"Strongly ground the scene in this description: {description}. Complexity must strictly suit {age_label(age)}; "
+                f"for preschool ages, use only a few large background elements and no decorative clutter."
+            )
         })
     return {"cover_brief": cover_brief, "pages": pages}
 
 
-def plan_scene_briefs(names: list[str], title: str, description: str, assignments: list[dict], age: int) -> dict:
+def plan_scene_briefs(names: list[str], title: str, description: str, assignments: list[dict], age: int, book_dna: dict) -> dict:
     if not OPENAI_API_KEY:
-        return fallback_scene_plan(names, description, assignments, age)
+        return fallback_scene_plan(names, description, assignments, age, book_dna)
 
     plan_lines = []
     for i, assignment in enumerate(assignments, start=1):
@@ -373,23 +577,29 @@ def plan_scene_briefs(names: list[str], title: str, description: str, assignment
         plan_lines.append(f"Page {i}: {'solo' if len(selected)==1 else 'group'} — {label}")
     plan_text = "\n".join(plan_lines)
     people = ", ".join(names)
+    dna_text = book_dna_text(book_dna, include_recipes=True)
     system = (
         "You are a creative art director for children's coloring books. "
         "Transform the user's description into distinct scene briefs for image generation. "
         "AGE APPROPRIATENESS HAS HIGHEST PRIORITY: for preschool ages, simplify aggressively and do not create visually dense scene briefs; for older children and teens, progressively allow more environmental richness. "
-        "Use varied sub-locations and specific actions without exceeding the target-age complexity. Avoid generic repeated scenes. Return strict JSON only."
+        "Use varied sub-locations and specific actions without exceeding the target-age complexity. "
+        "A hidden Book DNA creative fingerprint will be supplied. Treat every DNA field and every page recipe as a mandatory creative constraint, not a suggestion. "
+        "Avoid generic default sequences and repeated stock scenes. Return strict JSON only."
     )
     user = f"""Create an 8-page interior scene plan plus one cover scene brief for a personalized children's coloring book.
 
 Book title: {title}
 Characters: {people}
-Target age: {age} ({age_label(age)})\nAge-specific art guidance: {age_guidance(age)}\nEnvironment guidance: {environment_guidance(age)}\n\nDetailed Description:\n{description}\n\nInterior page cast plan (must be followed):
+Target age: {age} ({age_label(age)})\nAge-specific art guidance: {age_guidance(age)}\nEnvironment guidance: {environment_guidance(age)}\n\nDetailed Description:\n{description}\n\nUNIQUE BOOK DNA FOR THIS GENERATION (must materially shape the plan):\n{dna_text}\n\nInterior page cast plan (must be followed):
 {plan_text}
 
 Requirements:
 - Create one short but specific cover_brief for the cover image.
 - Create exactly 8 page briefs, one for each page listed above.
 - Each page brief must be visually distinct from the others.
+- Follow the Book DNA page recipe for the corresponding page, including its action archetype, composition cue, and energy.
+- Let the Book DNA story structure, opening, pacing, recurring motif, supporting dynamic, and ending materially change the sequence.
+- Do not fall back to the most obvious generic sequence for the theme. Two books with the same customer description but different Book DNA should feel recognizably different.
 - Each page brief must clearly establish a specific environment or sub-location, but the amount of scenery must obey the target-age guidance.
 - Spread the action across different rooms, landmarks, settings, or activity moments implied by the description.
 - For ages 3–4, name only a few large environmental elements and leave abundant visual breathing room; for older ages, progressively allow more props, scenery, and background detail.
@@ -427,7 +637,7 @@ Return JSON only in this exact structure:
     }
     response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload, timeout=120)
     if response.status_code >= 400:
-        return fallback_scene_plan(names, description, assignments, age)
+        return fallback_scene_plan(names, description, assignments, age, book_dna)
     try:
         raw = response.json()["choices"][0]["message"]["content"]
         data = _extract_json_object(raw)
@@ -442,7 +652,7 @@ Return JSON only in this exact structure:
             normalized.append({"page": i, "brief": brief})
         return {"cover_brief": str(data["cover_brief"]).strip(), "pages": normalized}
     except Exception:
-        return fallback_scene_plan(names, description, assignments, age)
+        return fallback_scene_plan(names, description, assignments, age, book_dna)
 
 
 def openai_edit(reference_paths: list[Path], prompt: str, quality: str) -> Image.Image:
@@ -478,7 +688,7 @@ def openai_edit(reference_paths: list[Path], prompt: str, quality: str) -> Image
     return Image.open(io.BytesIO(base64.b64decode(b64))).convert("RGB")
 
 
-def cover_prompt(names: list[str], title: str, description: str, scene_brief: str, age: int) -> str:
+def cover_prompt(names: list[str], title: str, description: str, scene_brief: str, age: int, book_dna: dict) -> str:
     people = ", ".join(names)
     ids = identity_text(names, list(range(len(names))))
     return f"""
@@ -486,7 +696,7 @@ Draw a polished full-color personalized coloring-book COVER illustration.
 DETAILED DESCRIPTION:
 {description}
 
-TARGET AGE: {age} ({age_label(age)})\nAGE-APPROPRIATE ART GUIDANCE: {age_guidance(age)}\nENVIRONMENT GUIDANCE: {environment_guidance(age)}\n\nCREATIVE COVER BRIEF:\n{scene_brief}\n\nCharacters who must all appear: {people}
+TARGET AGE: {age} ({age_label(age)})\nAGE-APPROPRIATE ART GUIDANCE: {age_guidance(age)}\nENVIRONMENT GUIDANCE: {environment_guidance(age)}\n\nUNIQUE BOOK DNA:\n{book_dna_text(book_dna, include_recipes=False)}\n\nCREATIVE COVER BRIEF:\n{scene_brief}\n\nCharacters who must all appear: {people}
 {ids}
 
 TITLE — EXACT TEXT:
@@ -503,7 +713,7 @@ Treat the Detailed Description as a visual specification, not merely a loose the
 """.strip()
 
 
-def interior_prompt(names: list[str], description: str, page_index: int, assignment: dict, scene_brief: str, age: int) -> str:
+def interior_prompt(names: list[str], description: str, page_index: int, assignment: dict, scene_brief: str, age: int, book_dna: dict) -> str:
     indices = assignment["indices"]
     selected = [names[i] for i in indices]
     who = selected[0] if len(selected) == 1 else " and ".join(selected)
@@ -524,6 +734,12 @@ ENVIRONMENT GUIDANCE:
 CREATIVE PAGE BRIEF:
 {scene_brief}
 
+UNIQUE PAGE RECIPE FOR THIS BOOK:
+Action archetype: {book_dna["page_recipes"][page_index - 1]["action"]}
+Composition cue: {book_dna["page_recipes"][page_index - 1]["composition"]}
+Energy: {book_dna["page_recipes"][page_index - 1]["energy"]}
+Recurring motif for the overall book: {book_dna["recurring_motif"]}. Use it only if it fits naturally on this page.
+
 {ids}
 The setting must be recognizable, but TARGET-AGE SIMPLICITY OVERRIDES environmental richness. For very young children, simplify or omit any scene-brief detail that would create clutter, tiny spaces, dense texture, or difficult coloring areas.
 
@@ -542,9 +758,10 @@ def generate_real_job(job_id: str):
     try:
         assignments = page_assignments(names)
         set_job(job_id, assignments=assignments, status="working", progress=3, message="Planning creative scenes…")
-        scene_plan = plan_scene_briefs(names, job["title"], job["description"], assignments, job["age"])
+        book_dna = job["book_dna"]
+        scene_plan = plan_scene_briefs(names, job["title"], job["description"], assignments, job["age"], book_dna)
         set_job(job_id, scene_plan=scene_plan, progress=8, message="Generating high-quality cover…")
-        cover = openai_edit(refs, cover_prompt(names, job["title"], job["description"], scene_plan["cover_brief"], job["age"]), "high")
+        cover = openai_edit(refs, cover_prompt(names, job["title"], job["description"], scene_plan["cover_brief"], job["age"], book_dna), "high")
         cover_path = job_dir / "cover.png"
         cover.save(cover_path, "PNG")
 
@@ -554,7 +771,7 @@ def generate_real_job(job_id: str):
             set_job(job_id, progress=pct, message=f"Generating coloring page {i} of 8 — {', '.join(actors)}…")
             selected_refs = [refs[x] for x in assignment["indices"]]
             page_brief = scene_plan["pages"][i - 1]["brief"]
-            img = openai_edit(selected_refs, interior_prompt(names, job["description"], i, assignment, page_brief, job["age"]), "low")
+            img = openai_edit(selected_refs, interior_prompt(names, job["description"], i, assignment, page_brief, job["age"], book_dna), "low")
             img.save(job_dir / f"page_{i}.png", "PNG", optimize=True)
 
         set_job(job_id, progress=90, message="Building print-ready PDF…")
@@ -613,17 +830,19 @@ def generate_preset_demo_job(job_id: str):
         set_job(job_id, status="error", progress=0, message="Demo failed.", error=str(exc))
 
 
-def randomized_creative_direction(description: str, names: list[str]) -> str:
+def randomized_creative_direction(description: str, names: list[str], book_dna: dict) -> str:
     who = names[0] if len(names) == 1 else " and ".join(names)
     return (
         f"Create a completely new visual approach for {who} based on this Detailed Description: '{description}'. "
-        f"{random.choice(COVER_COMPOSITIONS)} The overall mood should be {random.choice(MOODS)}. "
-        f"Across the interior artwork, {random.choice(VIEWPOINTS)}. Deliberately choose different expressions, poses, props, "
+        f"Use this story structure: {book_dna['story_structure']}. Begin from this opening idea: {book_dna['opening_situation']}. "
+        f"Emphasize {book_dna['activity_emphasis']}. Use {book_dna['recurring_motif']} as an occasional visual thread. "
+        f"The pacing should follow: {book_dna['pacing_pattern']}. The overall mood should be {book_dna['mood']}. "
+        f"For the cover, {book_dna['cover_composition']} Deliberately choose different expressions, poses, props, "
         "foreground/background arrangements, and scene compositions from any previous attempt."
     )
 
 
-def manual_prompt_1(names: list[str], title: str, description: str, direction: str, age: int) -> str:
+def manual_prompt_1(names: list[str], title: str, description: str, direction: str, age: int, book_dna: dict) -> str:
     char_lines = []
     for i, name in enumerate(names, start=1):
         char_lines.append(f"Person {i}: {name}\nUse {name}'s uploaded original photo only as {name}'s identity reference.")
@@ -677,6 +896,14 @@ CREATIVE DIRECTION FOR THIS ATTEMPT
 {direction}
 
 Use this direction as inspiration for a genuinely new design. Do not merely make a small variation of a previous composition.
+
+UNIQUE BOOK DNA — REQUIRED
+
+The website generated the following hidden creative fingerprint specifically for THIS book request. Treat it as a required creative constraint. It exists to ensure that another customer who enters the same title, age, characters, and Detailed Description can still receive a materially different book.
+
+{book_dna_text(book_dna, include_recipes=True)}
+
+Do not replace these choices with generic defaults. Build the 20-page sequence around this fingerprint. The exact settings and activities must still come from the user's Detailed Description, but the Book DNA must noticeably influence the story structure, scene order, activity emphasis, pacing, composition, recurring visual motif, supporting-character use, and ending.
 
 AGE-APPROPRIATE DETAIL LEVEL
 
@@ -742,6 +969,8 @@ MULTI-PERSON / CHARACTER DISTRIBUTION
 VARIATION REQUIREMENT
 
 Every page should feel individually illustrated. Deliberately vary facial expression, head angle, body position, pose, viewing angle, distance from the viewer, activity, props, and surrounding environment. Do not copy and paste the same head, expression, or pose from one page to another.
+
+Follow the 20 Book DNA page recipes above in order. A page recipe controls the broad action archetype, composition, and energy; adapt it intelligently to the Detailed Description rather than ignoring it. Avoid the most obvious repeated stock sequence for the theme. If another book used the same customer description with different Book DNA, the two finished books should have clearly different scene sequences and visual rhythms.
 
 COLORING-BOOK STYLE
 
@@ -860,6 +1089,7 @@ def config():
         "live_pages": 8,
         "live_pdf_pages": 12,
         "manual_pdf_pages": 24,
+        "book_dna_enabled": True,
         "version": APP_VERSION,
     }
 
@@ -918,8 +1148,14 @@ async def make_manual_prompts(request: Request):
         raise HTTPException(400, "Names, title, a target age, and a detailed description are required.")
     if age < 3 or age > 17:
         raise HTTPException(400, "Target age must be between 3 and 17.")
-    direction = randomized_creative_direction(description, names)
-    return {"prompt1": manual_prompt_1(names, title, description, direction, age), "prompt2": manual_prompt_2(), "creative_direction": direction}
+    book_dna = generate_book_dna(age, 20)
+    direction = randomized_creative_direction(description, names, book_dna)
+    return {
+        "prompt1": manual_prompt_1(names, title, description, direction, age, book_dna),
+        "prompt2": manual_prompt_2(),
+        "creative_direction": direction,
+        "book_dna_id": book_dna["id"],
+    }
 
 
 @app.post("/api/jobs")
@@ -976,6 +1212,7 @@ async def create_job(
         "job_dir": str(job_dir),
         "pdf": None,
         "assignments": page_assignments(names),
+        "book_dna": generate_book_dna(age, 8),
         "scene_plan": None,
     }
     threading.Thread(target=generate_real_job, args=(job_id,), daemon=True).start()
@@ -1054,10 +1291,11 @@ def retry_page(job_id: str, page_num: int):
     assignment = job["assignments"][page_num - 1]
     refs = [Path(p) for p in job["reference_paths"]]
     selected_refs = [refs[x] for x in assignment["indices"]]
-    scene_plan = job.get("scene_plan") or fallback_scene_plan(job["names"], job["description"], job["assignments"], job["age"])
+    book_dna = job.get("book_dna") or generate_book_dna(job["age"], 8)
+    scene_plan = job.get("scene_plan") or fallback_scene_plan(job["names"], job["description"], job["assignments"], job["age"], book_dna)
     page_brief = scene_plan["pages"][page_num - 1]["brief"]
     try:
-        img = openai_edit(selected_refs, interior_prompt(job["names"], job["description"], page_num, assignment, page_brief, job["age"]), "medium")
+        img = openai_edit(selected_refs, interior_prompt(job["names"], job["description"], page_num, assignment, page_brief, job["age"], book_dna), "medium")
         img.save(Path(job["job_dir"]) / f"page_{page_num}.png", "PNG", optimize=True)
         pdf = build_pdf(Path(job["job_dir"]), job["title"])
         set_job(job_id, status="done", progress=100, message=f"Page {page_num} regenerated at medium quality.", pdf=str(pdf))
