@@ -40,7 +40,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 jobs: dict[str, dict] = {}
 jobs_lock = threading.Lock()
 
-APP_VERSION = "book-dna-uniqueness-v9.0"
+APP_VERSION = "random-idea-tone-helper-v9.2"
 TEXT_MODEL = os.getenv("TEXT_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini"
 
 RNG = random.SystemRandom()
@@ -174,6 +174,280 @@ PRESCHOOL_COMPOSITION_CUES = [
     "kneeling interaction with a sparse setting", "standing interaction with a sparse setting", "simple walking scene", "simple seated scene",
     "large character shapes with one clear prop", "simple fence or path defining the setting", "simple indoor scene with two or three large objects", "simple outdoor scene with two or three large objects",
 ]
+
+
+RANDOM_IDEA_NAMES = [
+    "Willy", "Mickey", "David", "Luna", "Oliver", "Hazel", "Hendrix", "Milo", "Zoe", "Eli",
+    "Nora", "Finn", "Rosie", "Theo", "Lucy", "Leo", "Ruby", "Jasper", "Ellie", "Max",
+]
+
+RANDOM_IDEA_SUBJECTS = [
+    "robots", "dinosaurs", "pirates", "space", "dragons", "mermaids", "jungle animals", "construction trucks",
+    "fairies", "farm animals", "race cars", "underwater adventure", "castle", "camping", "superheroes",
+    "candy land", "petting zoo", "monster town", "treasure hunt", "friendly ghosts", "wild west",
+    "ocean rescue", "magic school", "rocket ships", "detectives", "rainforest", "snow adventure",
+]
+
+SUBJECT_BUNDLES = {
+    "robot": {
+        "world": "a bright robot workshop city full of gadget stations and friendly helper bots",
+        "locations": ["a welcome gate", "a robot workshop", "a parts factory", "a charging station", "a rooftop garden", "a race track", "a repair bay", "a celebration plaza"],
+        "props": ["gears", "tools", "control panels", "tiny helper bots", "blueprints"],
+        "activities": ["meeting a robot guide", "building a small gadget", "fixing a simple machine", "racing a mini bot", "delivering parts", "celebrating with robot friends"],
+        "helpers": "friendly robots and silly mini helper bots",
+        "mood": "playful, inventive, and adventurous",
+    },
+    "robots": {
+        "world": "a bright robot workshop city full of gadget stations and friendly helper bots",
+        "locations": ["a welcome gate", "a robot workshop", "a parts factory", "a charging station", "a rooftop garden", "a race track", "a repair bay", "a celebration plaza"],
+        "props": ["gears", "tools", "control panels", "tiny helper bots", "blueprints"],
+        "activities": ["meeting a robot guide", "building a small gadget", "fixing a simple machine", "racing a mini bot", "delivering parts", "celebrating with robot friends"],
+        "helpers": "friendly robots and silly mini helper bots",
+        "mood": "playful, inventive, and adventurous",
+    },
+    "dinosaur": {
+        "world": "a colorful dinosaur valley with jungles, gentle volcanoes, and friendly dinosaurs",
+        "locations": ["a jungle path", "a fern meadow", "a dinosaur nest", "a wooden bridge", "a waterfall cove", "a volcano overlook", "a fossil dig site", "a dino party clearing"],
+        "props": ["binoculars", "a field journal", "fossils", "large leaves", "backpacks"],
+        "activities": ["meeting a baby dinosaur", "following big footprints", "finding dinosaur eggs", "feeding a gentle dinosaur", "crossing a bridge", "celebrating with dinosaur friends"],
+        "helpers": "friendly dinosaurs of different sizes",
+        "mood": "exciting, warm, and adventurous",
+    },
+    "dinosaurs": {
+        "world": "a colorful dinosaur valley with jungles, gentle volcanoes, and friendly dinosaurs",
+        "locations": ["a jungle path", "a fern meadow", "a dinosaur nest", "a wooden bridge", "a waterfall cove", "a volcano overlook", "a fossil dig site", "a dino party clearing"],
+        "props": ["binoculars", "a field journal", "fossils", "large leaves", "backpacks"],
+        "activities": ["meeting a baby dinosaur", "following big footprints", "finding dinosaur eggs", "feeding a gentle dinosaur", "crossing a bridge", "celebrating with dinosaur friends"],
+        "helpers": "friendly dinosaurs of different sizes",
+        "mood": "exciting, warm, and adventurous",
+    },
+    "space": {
+        "world": "a cheerful outer-space adventure with planets, rockets, and friendly aliens",
+        "locations": ["a rocket launch pad", "the moon", "a ringed planet lookout", "a floating space station", "a crystal asteroid", "an alien garden", "a rover trail", "a star celebration scene"],
+        "props": ["helmets", "star maps", "moon rocks", "space backpacks", "control panels"],
+        "activities": ["waving from a rocket", "driving a rover", "discovering moon rocks", "meeting a friendly alien", "floating in zero gravity", "celebrating among the stars"],
+        "helpers": "friendly aliens and tiny robot helpers",
+        "mood": "wonder-filled, playful, and adventurous",
+    },
+    "pirates": {
+        "world": "a fun pirate world with sunny islands, treasure maps, and friendly pirate ships",
+        "locations": ["a pirate dock", "a ship deck", "a treasure cave", "a palm-tree island", "a rope bridge", "a hidden lagoon", "a lookout tower", "a treasure party"],
+        "props": ["maps", "keys", "treasure chests", "spyglasses", "flags"],
+        "activities": ["reading a treasure map", "steering a ship", "digging for treasure", "crossing a rope bridge", "spotting clues", "celebrating with a treasure chest"],
+        "helpers": "friendly pirate friends and silly parrots",
+        "mood": "playful, bold, and adventurous",
+    },
+    "bigfoot": {
+        "world": "a whimsical forest full of giant trees, mushrooms, creeks, and a friendly Bigfoot",
+        "locations": ["a woodland trail", "a creek crossing", "a waterfall", "a log bridge", "a cozy cave", "a fern clearing", "a giant tree grove", "a sunset overlook"],
+        "props": ["lanterns", "backpacks", "maps", "boots", "forest snacks"],
+        "activities": ["meeting Bigfoot", "crossing a stream", "following a trail map", "exploring a cave", "sharing a snack", "celebrating on a scenic overlook"],
+        "helpers": "a friendly Bigfoot and small forest animals",
+        "mood": "warm, whimsical, and adventurous",
+    },
+    "superheroes": {
+        "world": "a lively superhero city with rooftops, training areas, and cheerful city scenes",
+        "locations": ["a city street", "a rooftop", "a practice gym", "a park rescue scene", "a bridge", "a control room", "a skyline lookout", "a hero celebration"],
+        "props": ["capes", "masks", "gadgets", "hero emblems", "city maps"],
+        "activities": ["striking a hero pose", "training", "helping people", "stopping a silly problem", "zooming across the city", "celebrating like a hero"],
+        "helpers": "friendly sidekicks and helpful city characters",
+        "mood": "energetic, brave, and upbeat",
+    },
+    "petting zoo": {
+        "world": "a gentle petting-zoo adventure with small farm paths and friendly animals",
+        "locations": ["the zoo gate", "a duck pond", "a goat pen", "a sheep yard", "a bunny corner", "a little barn", "a feeding station", "a picnic spot"],
+        "props": ["feed cups", "fences", "hay bales", "watering cans", "small signs"],
+        "activities": ["feeding ducks", "petting a goat", "watching a sheep", "meeting a bunny", "helping at the barn", "waving goodbye to the animals"],
+        "helpers": "friendly farm animals and gentle zookeepers",
+        "mood": "sweet, calm, and cheerful",
+    },
+}
+
+GENERIC_WORLD_OPTIONS = [
+    "a bright themed world full of fun places to explore",
+    "a playful adventure setting with several distinct locations",
+    "a cheerful world built around the theme",
+    "a whimsical place where every stop feels different",
+]
+GENERIC_LOCATION_POOL = [
+    "a welcome entrance", "a winding path", "a busy central area", "a lookout point", "a hidden nook",
+    "a bridge or crossing", "a workshop or activity area", "a scenic final destination",
+]
+GENERIC_PROP_POOL = ["maps", "backpacks", "small tools", "snacks", "signs", "decorations", "collectibles", "lanterns"]
+GENERIC_ACTIVITY_POOL = [
+    "meeting a friendly helper", "discovering something surprising", "following clues", "trying a fun activity",
+    "helping with a simple task", "finding a special object", "exploring a new area", "celebrating at the end",
+]
+GENERIC_HELPER_POOL = [
+    "friendly helpers that fit the theme", "silly side characters", "helpful creatures", "fun background friends",
+]
+GENERIC_MOOD_POOL = [
+    "playful and adventurous", "warm and imaginative", "fun and energetic", "bright and cheerful",
+]
+
+RANDOM_IDEA_TONES = {
+    "funny": "funny, silly, and lighthearted, with harmless visual jokes and playful situations",
+    "adventurous": "adventurous, energetic, and discovery-focused, with a sense of movement and exploration",
+    "cute": "cute, sweet, and gentle, with friendly expressions and warm interactions",
+    "educational": "curious and educational, mixing fun with age-appropriate discovery, observation, and learning moments",
+    "magical": "magical, whimsical, and imaginative, with wonder-filled locations and delightful surprises",
+    "mysterious": "mysterious but kid-friendly, with clues, discoveries, and gentle suspense rather than anything scary",
+    "calm": "calm, cozy, and comforting, with relaxed activities and peaceful locations",
+    "action": "action-packed and energetic, with lots of movement, challenges, and exciting but family-friendly activity",
+}
+RANDOM_IDEA_TONE_LABELS = {
+    "funny": "Funny",
+    "adventurous": "Adventurous",
+    "cute": "Cute & Gentle",
+    "educational": "Educational",
+    "magical": "Magical",
+    "mysterious": "Mysterious",
+    "calm": "Calm & Cozy",
+    "action": "Action-Packed",
+}
+
+TITLE_TEMPLATES = [
+    "{name} and the {subject_title} Adventure",
+    "{name} Explores the {subject_title} World",
+    "{name} Visits the {subject_title} Kingdom",
+    "{name}'s {subject_title} Journey",
+]
+
+
+def subject_key(subject: str) -> str:
+    return " ".join((subject or "").strip().lower().replace("_", " ").split())
+
+
+def age_bucket(age: int) -> str:
+    if age <= 4:
+        return "preschool"
+    if age <= 7:
+        return "early"
+    if age <= 10:
+        return "middle"
+    if age <= 13:
+        return "upper"
+    return "teen"
+
+
+def random_age_value() -> int:
+    weighted = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    weights = [1, 2, 3, 4, 5, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1]
+    return RNG.choices(weighted, weights=weights, k=1)[0]
+
+
+def pick_subject_bundle(subject: str) -> tuple[str, dict]:
+    raw = (subject or "").strip()
+    key = subject_key(raw)
+    if key in SUBJECT_BUNDLES:
+        return raw or key, SUBJECT_BUNDLES[key]
+    singular = key[:-1] if key.endswith("s") else key
+    if singular in SUBJECT_BUNDLES:
+        return raw or singular, SUBJECT_BUNDLES[singular]
+    generated_subject = raw or RNG.choice(RANDOM_IDEA_SUBJECTS)
+    locations = RNG.sample(GENERIC_LOCATION_POOL, k=min(6, len(GENERIC_LOCATION_POOL)))
+    bundle = {
+        "world": f"a {generated_subject} themed world with several fun places to explore" if generated_subject else RNG.choice(GENERIC_WORLD_OPTIONS),
+        "locations": locations,
+        "props": RNG.sample(GENERIC_PROP_POOL, k=4),
+        "activities": RNG.sample(GENERIC_ACTIVITY_POOL, k=5),
+        "helpers": RNG.choice(GENERIC_HELPER_POOL),
+        "mood": RNG.choice(GENERIC_MOOD_POOL),
+    }
+    return generated_subject, bundle
+
+
+def humanize_subject(subject: str) -> str:
+    s = (subject or "").strip()
+    if not s:
+        return "Adventure"
+    return " ".join(word.capitalize() for word in s.replace("_", " ").split())
+
+
+def random_book_title(name: str, subject: str) -> str:
+    subject_title = humanize_subject(subject)
+    return RNG.choice(TITLE_TEMPLATES).format(name=name, subject_title=subject_title)
+
+
+def choose_random_idea_tone(tone: str | None = None) -> tuple[str, str]:
+    key = (tone or "").strip().lower()
+    aliases = {
+        "surprise": "", "random": "", "auto": "",
+        "cute & gentle": "cute", "cute and gentle": "cute",
+        "calm & cozy": "calm", "calm and cozy": "calm",
+        "action-packed": "action", "action packed": "action",
+    }
+    key = aliases.get(key, key)
+    if key not in RANDOM_IDEA_TONES:
+        key = RNG.choice(list(RANDOM_IDEA_TONES.keys()))
+    return key, RANDOM_IDEA_TONES[key]
+
+
+def build_random_description(name: str, age: int, subject: str, bundle: dict, tone_guidance: str) -> str:
+    bucket = age_bucket(age)
+    locations = list(bundle.get("locations", []))[:6]
+    props = list(bundle.get("props", []))[:4]
+    activities = list(bundle.get("activities", []))[:5]
+    while len(locations) < 6:
+        locations.append(RNG.choice(GENERIC_LOCATION_POOL))
+    while len(props) < 4:
+        props.append(RNG.choice(GENERIC_PROP_POOL))
+    while len(activities) < 5:
+        activities.append(RNG.choice(GENERIC_ACTIVITY_POOL))
+    helpers = bundle.get("helpers", "friendly side characters")
+    bundle_mood = bundle.get("mood", "playful and adventurous")
+    mood = tone_guidance or bundle_mood
+    world = bundle.get("world", f"a {subject or 'fun'} themed adventure world")
+    subject_phrase = subject or "adventure"
+
+    if bucket == "preschool":
+        return (
+            f"Create a very simple coloring-book adventure for a {age}-year-old about {name} exploring {world}. "
+            f"Use large, easy-to-recognize scenes such as {locations[0]}, {locations[1]}, {locations[2]}, and {locations[3]}. "
+            f"Include friendly {helpers}, simple props like {props[0]} and {props[1]}, and easy activities like {activities[0]}, {activities[1]}, {activities[2]}, and {activities[3]}. "
+            f"Use a {mood} tone throughout, with very simple environments and clear visual variety."
+        )
+
+    if bucket == "early":
+        return (
+            f"Create a playful {subject_phrase} adventure for {name}. Set it in {world}. "
+            f"Show different locations such as {locations[0]}, {locations[1]}, {locations[2]}, {locations[3]}, and {locations[4]}. "
+            f"Include {helpers}, props like {props[0]}, {props[1]}, and {props[2]}, and activities such as {activities[0]}, {activities[1]}, {activities[2]}, {activities[3]}, and {activities[4]}. "
+            f"Keep the tone {mood}, with a clear beginning, middle, and happy ending."
+        )
+
+    if bucket in {"middle", "upper"}:
+        return (
+            f"Create a detailed, kid-friendly {subject_phrase} adventure starring {name}. Set the story in {world}. "
+            f"Spread the pages across varied places such as {locations[0]}, {locations[1]}, {locations[2]}, {locations[3]}, {locations[4]}, and {locations[5]}. "
+            f"Include {helpers}, useful props like {props[0]}, {props[1]}, {props[2]}, and {props[3]}, and show activities like {activities[0]}, {activities[1]}, {activities[2]}, {activities[3]}, and {activities[4]}. "
+            f"Keep the tone {mood} and make the pages visually varied from one another."
+        )
+
+    return (
+        f"Create a more advanced coloring-book adventure for {name} built around the theme of {subject_phrase}. "
+        f"Set it in {world} and move through distinct scenes such as {locations[0]}, {locations[1]}, {locations[2]}, {locations[3]}, {locations[4]}, and {locations[5]}. "
+        f"Include {helpers}, props like {props[0]}, {props[1]}, {props[2]}, and {props[3]}, and activities such as {activities[0]}, {activities[1]}, {activities[2]}, {activities[3]}, and {activities[4]}. "
+        f"Keep the tone {mood}, while making the pages distinct and story-like."
+    )
+
+
+def generate_random_book_idea(name: str | None = None, age: int | None = None, subject: str | None = None, tone: str | None = None) -> dict:
+    chosen_name = (name or "").strip() or RNG.choice(RANDOM_IDEA_NAMES)
+    chosen_age = age if isinstance(age, int) and 3 <= age <= 17 else random_age_value()
+    chosen_subject, bundle = pick_subject_bundle(subject or "")
+    tone_key, tone_guidance = choose_random_idea_tone(tone)
+    title = random_book_title(chosen_name, chosen_subject)
+    description = build_random_description(chosen_name, chosen_age, chosen_subject, bundle, tone_guidance)
+    return {
+        "name": chosen_name,
+        "age": chosen_age,
+        "subject": chosen_subject,
+        "tone": tone_key,
+        "tone_label": RANDOM_IDEA_TONE_LABELS[tone_key],
+        "title": title,
+        "description": description,
+    }
 
 
 def generate_book_dna(age: int, page_count: int = 8) -> dict:
@@ -1135,6 +1409,24 @@ async def create_demo_job(request: Request):
     }
     threading.Thread(target=generate_preset_demo_job, args=(job_id,), daemon=True).start()
     return {"id": job_id}
+
+
+@app.post("/api/random-book-idea")
+async def random_book_idea(request: Request):
+    body = await request.json()
+    name = str(body.get("name", "") or "").strip()
+    subject = str(body.get("subject", "") or "").strip()
+    tone = str(body.get("tone", "") or "").strip()
+    age_raw = str(body.get("age", "") or "").strip()
+    age: Optional[int] = None
+    if age_raw:
+        try:
+            age = int(age_raw)
+        except ValueError:
+            raise HTTPException(400, "Target age must be a whole number between 3 and 17.")
+        if age < 3 or age > 17:
+            raise HTTPException(400, "Target age must be between 3 and 17.")
+    return generate_random_book_idea(name=name, age=age, subject=subject, tone=tone)
 
 
 @app.post("/api/manual-prompts")
