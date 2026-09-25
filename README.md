@@ -75,3 +75,33 @@ Each live generation now receives a hidden randomized creative fingerprint that 
 - Additional people are added only with + Add Another Person.
 - Added a small Clear Fields button beside Generate Random Idea.
 - Clear Fields resets only the Idea Generator helper values (names, target age, subject, and tone) so the next random generation can be a fresh roll without disturbing the main live form or uploaded photos.
+
+
+## v9.6 update
+- Added a Clear Fields button to the standard Live Generator.
+- Clearing the standard form resets title, target age, description, uploaded photos, and people back to one blank person.
+- The Idea Generator remains separate and keeps its own Clear Fields control.
+
+## v9.7 update
+- Reworked random title generation to be subject-aware.
+- Removed generic overuse of "Kingdom" and "World".
+- Special title families now exist for cops & robbers, detectives, robots, dinosaurs, pirates, space, Bigfoot, superheroes, petting zoos, construction, ocean themes, magic, and sports.
+- Unknown subjects use natural activity/place title patterns instead.
+
+## v9.8 update
+- Random descriptions now use the same subject-family recognition as random titles.
+- Added tailored scene/location/prop/activity bundles for cops & robbers, detectives, construction, ocean, magic, sports, and camping.
+- Synonyms such as police/crooks, androids, astronauts, etc. can now inherit the appropriate description family instead of using generic filler.
+- Generic fallback language was made less nonsensical for unusual subjects.
+
+## v9.9 update - Story Mode
+- Added a Story Mode toggle to the Live Generator.
+- Story Mode makes the 8 live interior pages one continuous beginning-to-end story.
+- The text planner generates exact age-appropriate narration for every interior page.
+- Narration is not rendered by the image model; it is typeset as crisp PDF text beneath each image.
+- Story narration is shown in the live review gallery.
+- Multi-person Story Mode uses a group-heavy page plan for better continuity.
+- Retry keeps the original story text while regenerating only the selected illustration.
+- Manual ChatGPT Prompt 1 now creates a continuous 20-page story and exact Page 1-20 narration list when Story Mode is enabled.
+- Manual Prompt 2 typesets that approved narration beneath the corresponding artwork.
+- Story Mode is off by default, preserving the existing standard workflow.

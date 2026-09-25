@@ -19,6 +19,7 @@ import requests
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.utils import ImageReader
+from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 
 load_dotenv()
@@ -40,7 +41,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 jobs: dict[str, dict] = {}
 jobs_lock = threading.Lock()
 
-APP_VERSION = "multi-person-standard-clear-v9.6"
+APP_VERSION = "story-mode-v9.9"
 TEXT_MODEL = os.getenv("TEXT_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini"
 
 RNG = random.SystemRandom()
@@ -1209,11 +1210,95 @@ def wrap_text(draw: ImageDraw.ImageDraw, text: str, fnt, max_width: int) -> list
     return lines
 
 
-def build_pdf(job_dir: Path, title: str) -> Path:
+
+def story_copy_guidance(age: int) -> str:
+    if age <= 4:
+        return "Use exactly one very short sentence per page, about 4–10 simple words. Use concrete vocabulary and one clear action."
+    if age <= 7:
+        return "Use one simple sentence per page, usually about 7–14 words. Occasionally two very short sentences are acceptable."
+    if age <= 10:
+        return "Use 1–2 short sentences per page, roughly 12–28 words total, with clear cause-and-effect story progression."
+    if age <= 13:
+        return "Use 1–2 fuller sentences per page, roughly 20–40 words total, with slightly richer narrative detail while remaining concise."
+    return "Use 2–3 concise sentences per page, roughly 30–55 words total, with stronger narrative detail while keeping the illustration dominant."
+
+
+def story_arc_8_text() -> str:
+    return (
+        "Page 1 = introduction/setup; Page 2 = discovery or problem begins; Page 3 = the characters commit to the journey; "
+        "Page 4 = first meaningful obstacle; Page 5 = progress, clue, or partial success; Page 6 = larger complication; "
+        "Page 7 = climax/decisive action; Page 8 = resolution and satisfying closing beat."
+    )
+
+
+def fallback_story_texts(names: list[str], age: int) -> list[str]:
+    people = names[0] if len(names) == 1 else " and ".join(names)
+    if age <= 4:
+        return [
+            f"{people} begin a new adventure.",
+            "They find something surprising.",
+            "They decide to follow the clue.",
+            "A tricky problem blocks the way.",
+            "They find a way forward.",
+            "One last challenge appears.",
+            "They work together and succeed.",
+            "Everyone celebrates a happy ending.",
+        ]
+    if age <= 7:
+        return [
+            f"{people} begin an exciting new adventure together.",
+            "Soon, they discover something surprising that changes their plans.",
+            "They decide to follow the clues and see where they lead.",
+            "Their journey becomes harder when a tricky obstacle blocks the way.",
+            "A clever idea helps them make progress and keep going.",
+            "Then an even bigger challenge appears just before the finish.",
+            "They work together, solve the problem, and complete their mission.",
+            "With the adventure complete, everyone celebrates a happy ending.",
+        ]
+    return [
+        f"{people} set out on a new adventure, curious about what they might discover.",
+        "An unexpected discovery gives them a goal and sends the story in a new direction.",
+        "They commit to the journey, following the first clue and moving deeper into the adventure.",
+        "A real obstacle forces them to stop, think, and try a different approach.",
+        "Their effort pays off, revealing new information and bringing the goal within reach.",
+        "Just when success seems close, a larger complication raises the stakes and tests their plan.",
+        "Using what they have learned, they face the final challenge and bring the adventure to its climax.",
+        "The problem is resolved, the goal is reached, and the story ends with a satisfying celebration.",
+    ]
+
+
+def wrap_pdf_text(text: str, font_name: str, font_size: float, max_width: float) -> list[str]:
+    words = text.split()
+    lines, current = [], ""
+    for word in words:
+        test = f"{current} {word}".strip()
+        if not current or stringWidth(test, font_name, font_size) <= max_width:
+            current = test
+        else:
+            lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    return lines
+
+
+def story_font_size(age: int) -> float:
+    if age <= 4:
+        return 15
+    if age <= 7:
+        return 14
+    if age <= 10:
+        return 13
+    if age <= 13:
+        return 12
+    return 11
+
+def build_pdf(job_dir: Path, title: str, story_texts: Optional[list[str]] = None, age: int = 8) -> Path:
     """Automatic demo output: 12 pages = cover, blank, 8 coloring pages, 2 blanks."""
     output = job_dir / f"{safe_slug(title)}_print_ready.pdf"
     c = canvas.Canvas(str(output), pagesize=letter)
-    pw, ph = letter  # exactly 612 x 792 points
+    pw, ph = letter
+    story_texts = story_texts or []
 
     ordered: list[Optional[Path]] = [job_dir / "cover.png", None]
     ordered += [job_dir / f"page_{i}.png" for i in range(1, 9)]
@@ -1223,20 +1308,63 @@ def build_pdf(job_dir: Path, title: str) -> Path:
         if path is not None:
             with Image.open(path) as im:
                 iw, ih = im.size
-            margin = 0 if page_no == 1 else 18
-            scale = min((pw - 2 * margin) / iw, (ph - 2 * margin) / ih)
-            w, h = iw * scale, ih * scale
-            x, y = (pw - w) / 2, (ph - h) / 2
-            c.drawImage(ImageReader(str(path)), x, y, width=w, height=h, preserveAspectRatio=True, mask="auto")
+            if page_no == 1:
+                scale = min(pw / iw, ph / ih)
+                w, h = iw * scale, ih * scale
+                x, y = (pw - w) / 2, (ph - h) / 2
+                c.drawImage(ImageReader(str(path)), x, y, width=w, height=h, preserveAspectRatio=True, mask="auto")
+            else:
+                story_index = page_no - 3
+                story_text = story_texts[story_index].strip() if 0 <= story_index < len(story_texts) else ""
+                if story_text:
+                    side_margin = 24
+                    top_margin = 24
+                    text_zone_h = 112 if age >= 11 else 96
+                    image_bottom = text_zone_h + 16
+                    available_w = pw - 2 * side_margin
+                    available_h = ph - top_margin - image_bottom
+                    scale = min(available_w / iw, available_h / ih)
+                    w, h = iw * scale, ih * scale
+                    x = (pw - w) / 2
+                    y = image_bottom + (available_h - h) / 2
+                    c.drawImage(ImageReader(str(path)), x, y, width=w, height=h, preserveAspectRatio=True, mask="auto")
+
+                    font_name = "Helvetica"
+                    fsize = story_font_size(age)
+                    lines = wrap_pdf_text(story_text, font_name, fsize, pw - 72)
+                    leading = fsize * 1.28
+                    block_h = len(lines) * leading
+                    start_y = max(28, (text_zone_h - block_h) / 2 + 22 + block_h - leading)
+                    c.setFont(font_name, fsize)
+                    c.setFillColorRGB(0.08, 0.08, 0.08)
+                    for line_no, line in enumerate(lines):
+                        c.drawCentredString(pw / 2, start_y - line_no * leading, line)
+                else:
+                    margin = 18
+                    scale = min((pw - 2 * margin) / iw, (ph - 2 * margin) / ih)
+                    w, h = iw * scale, ih * scale
+                    x, y = (pw - w) / 2, (ph - h) / 2
+                    c.drawImage(ImageReader(str(path)), x, y, width=w, height=h, preserveAspectRatio=True, mask="auto")
         c.showPage()
     c.save()
     return output
 
 
-def page_assignments(names: list[str]) -> list[dict]:
+def page_assignments(names: list[str], story_mode: bool = False) -> list[dict]:
     if len(names) == 1:
         return [{"kind": "solo", "indices": [0]} for _ in range(8)]
-    # Four solo slots and four everyone-together slots, interleaved.
+    if story_mode:
+        solos = [i % len(names) for i in range(3)]
+        return [
+            {"kind": "group", "indices": list(range(len(names)))},
+            {"kind": "solo", "indices": [solos[0]]},
+            {"kind": "group", "indices": list(range(len(names)))},
+            {"kind": "solo", "indices": [solos[1]]},
+            {"kind": "group", "indices": list(range(len(names)))},
+            {"kind": "solo", "indices": [solos[2]]},
+            {"kind": "group", "indices": list(range(len(names)))},
+            {"kind": "group", "indices": list(range(len(names)))},
+        ]
     solo = [i % len(names) for i in range(4)]
     out = []
     for i in range(4):
@@ -1276,7 +1404,7 @@ def _extract_json_object(raw: str) -> dict:
     return json.loads(raw[start:end+1])
 
 
-def fallback_scene_plan(names: list[str], description: str, assignments: list[dict], age: int, book_dna: dict) -> dict:
+def fallback_scene_plan(names: list[str], description: str, assignments: list[dict], age: int, book_dna: dict, story_mode: bool = False) -> dict:
     people = ", ".join(names)
     cover_brief = (
         f"A highly creative personalized children's-book cover for {age_label(age)} showing {people} in a scene that clearly expresses this detailed description: {description}. "
@@ -1284,27 +1412,40 @@ def fallback_scene_plan(names: list[str], description: str, assignments: list[di
         f"motif={book_dna['recurring_motif']}; mood={book_dna['mood']}; cover composition={book_dna['cover_composition']}. "
         f"Use a fresh composition, strong sense of place, expressive faces, and a clear family-friendly storybook feel."
     )
+    story_lines = fallback_story_texts(names, age) if story_mode else [""] * len(assignments)
+    arc_beats = [
+        "introduce the characters and setting",
+        "introduce the discovery or problem",
+        "show the characters choosing to act",
+        "present the first real obstacle",
+        "show progress or a useful clue",
+        "raise the stakes with a larger complication",
+        "show the decisive climax",
+        "resolve the story with a satisfying ending",
+    ]
     pages = []
     for i, assignment in enumerate(assignments, start=1):
         selected = [names[x] for x in assignment["indices"]]
         who = selected[0] if len(selected) == 1 else " and ".join(selected)
         recipe = book_dna["page_recipes"][i - 1]
+        story_prefix = f"This is story beat {i} of 8: {arc_beats[i-1]}. Maintain continuity with the prior beat. " if story_mode else ""
         pages.append({
             "page": i,
             "brief": (
-                f"Page {i} should feature {who} in a specific location from the Detailed Description. "
+                f"{story_prefix}Page {i} should feature {who} in a specific location from the Detailed Description. "
                 f"Creative recipe: {recipe['action']}; {recipe['composition']}; {recipe['energy']}. "
                 f"Use the book's recurring motif ({book_dna['recurring_motif']}) only when it fits naturally. "
                 f"Strongly ground the scene in this description: {description}. Complexity must strictly suit {age_label(age)}; "
                 f"for preschool ages, use only a few large background elements and no decorative clutter."
-            )
+            ),
+            "story_text": story_lines[i - 1],
         })
-    return {"cover_brief": cover_brief, "pages": pages}
+    return {"cover_brief": cover_brief, "pages": pages, "story_mode": story_mode}
 
 
-def plan_scene_briefs(names: list[str], title: str, description: str, assignments: list[dict], age: int, book_dna: dict) -> dict:
+def plan_scene_briefs(names: list[str], title: str, description: str, assignments: list[dict], age: int, book_dna: dict, story_mode: bool = False) -> dict:
     if not OPENAI_API_KEY:
-        return fallback_scene_plan(names, description, assignments, age, book_dna)
+        return fallback_scene_plan(names, description, assignments, age, book_dna, story_mode)
 
     plan_lines = []
     for i, assignment in enumerate(assignments, start=1):
@@ -1314,51 +1455,97 @@ def plan_scene_briefs(names: list[str], title: str, description: str, assignment
     plan_text = "\n".join(plan_lines)
     people = ", ".join(names)
     dna_text = book_dna_text(book_dna, include_recipes=True)
-    system = (
-        "You are a creative art director for children's coloring books. "
-        "Transform the user's description into distinct scene briefs for image generation. "
-        "AGE APPROPRIATENESS HAS HIGHEST PRIORITY: for preschool ages, simplify aggressively and do not create visually dense scene briefs; for older children and teens, progressively allow more environmental richness. "
-        "Use varied sub-locations and specific actions without exceeding the target-age complexity. "
-        "A hidden Book DNA creative fingerprint will be supplied. Treat every DNA field and every page recipe as a mandatory creative constraint, not a suggestion. "
-        "Avoid generic default sequences and repeated stock scenes. Return strict JSON only."
-    )
-    user = f"""Create an 8-page interior scene plan plus one cover scene brief for a personalized children's coloring book.
+
+    if story_mode:
+        system = (
+            "You are a children's picture-book storyteller and coloring-book art director. "
+            "Create ONE continuous beginning-to-end story, then divide it into exactly eight sequential visual beats. "
+            "Every page must logically follow the previous page and advance the same plot. Preserve locations, props, discoveries, goals, and cause-and-effect continuity. "
+            "AGE APPROPRIATENESS HAS HIGHEST PRIORITY for both art direction and prose. "
+            "The story text will be typeset by the website beneath the image, so NEVER ask the image model to render words. "
+            "A hidden Book DNA creative fingerprint is supplied; use it to make this story distinct without breaking narrative continuity. Return strict JSON only."
+        )
+        mode_requirements = f'''
+STORY MODE IS ON.
+- The 8 pages must form one contained story with a clear beginning, rising action, climax, and resolution.
+- Required condensed arc: {story_arc_8_text()}
+- Story prose rule for this age: {story_copy_guidance(age)}
+- Each page object must contain BOTH a visual brief and exact story_text.
+- story_text must describe the current beat, not merely label the picture.
+- Do not restart the premise on each page. Do not create eight unrelated vignettes.
+- Maintain continuity of important props, goals, supporting characters, and consequences from page to page.
+- If a page is assigned to one character, use that as a focused beat within the SAME story while the other characters remain part of the overall narrative.
+'''
+        json_structure = '''{
+  "cover_brief": "...",
+  "pages": [
+    {"page": 1, "brief": "...", "story_text": "..."},
+    {"page": 2, "brief": "...", "story_text": "..."},
+    {"page": 3, "brief": "...", "story_text": "..."},
+    {"page": 4, "brief": "...", "story_text": "..."},
+    {"page": 5, "brief": "...", "story_text": "..."},
+    {"page": 6, "brief": "...", "story_text": "..."},
+    {"page": 7, "brief": "...", "story_text": "..."},
+    {"page": 8, "brief": "...", "story_text": "..."}
+  ]
+}'''
+    else:
+        system = (
+            "You are a creative art director for children's coloring books. "
+            "Transform the user's description into distinct scene briefs for image generation. "
+            "AGE APPROPRIATENESS HAS HIGHEST PRIORITY: for preschool ages, simplify aggressively and do not create visually dense scene briefs; for older children and teens, progressively allow more environmental richness. "
+            "Use varied sub-locations and specific actions without exceeding the target-age complexity. "
+            "A hidden Book DNA creative fingerprint will be supplied. Treat every DNA field and every page recipe as a mandatory creative constraint, not a suggestion. "
+            "Avoid generic default sequences and repeated stock scenes. Return strict JSON only."
+        )
+        mode_requirements = "- Story Mode is off. Pages may function as varied standalone scenes; story_text should be omitted.\n"
+        json_structure = '''{
+  "cover_brief": "...",
+  "pages": [
+    {"page": 1, "brief": "..."},
+    {"page": 2, "brief": "..."},
+    {"page": 3, "brief": "..."},
+    {"page": 4, "brief": "..."},
+    {"page": 5, "brief": "..."},
+    {"page": 6, "brief": "..."},
+    {"page": 7, "brief": "..."},
+    {"page": 8, "brief": "..."}
+  ]
+}'''
+
+    user = f'''Create an 8-page interior scene plan plus one cover scene brief for a personalized children's coloring book.
 
 Book title: {title}
 Characters: {people}
-Target age: {age} ({age_label(age)})\nAge-specific art guidance: {age_guidance(age)}\nEnvironment guidance: {environment_guidance(age)}\n\nDetailed Description:\n{description}\n\nUNIQUE BOOK DNA FOR THIS GENERATION (must materially shape the plan):\n{dna_text}\n\nInterior page cast plan (must be followed):
+Target age: {age} ({age_label(age)})
+Age-specific art guidance: {age_guidance(age)}
+Environment guidance: {environment_guidance(age)}
+
+Detailed Description:
+{description}
+
+UNIQUE BOOK DNA FOR THIS GENERATION (must materially shape the plan):
+{dna_text}
+
+Interior page cast plan (must be followed):
 {plan_text}
 
 Requirements:
 - Create one short but specific cover_brief for the cover image.
 - Create exactly 8 page briefs, one for each page listed above.
-- Each page brief must be visually distinct from the others.
+- Each page brief must be visually distinct from the others while still respecting Story Mode continuity when enabled.
 - Follow the Book DNA page recipe for the corresponding page, including its action archetype, composition cue, and energy.
 - Let the Book DNA story structure, opening, pacing, recurring motif, supporting dynamic, and ending materially change the sequence.
 - Do not fall back to the most obvious generic sequence for the theme. Two books with the same customer description but different Book DNA should feel recognizably different.
 - Each page brief must clearly establish a specific environment or sub-location, but the amount of scenery must obey the target-age guidance.
-- Spread the action across different rooms, landmarks, settings, or activity moments implied by the description.
 - For ages 3–4, name only a few large environmental elements and leave abundant visual breathing room; for older ages, progressively allow more props, scenery, and background detail.
-- Make the scenes imaginative, storybook-like, and more creative than a literal one-line interpretation.
 - Keep the scenes family-friendly and suitable for a children's coloring book.
 - Respect the page cast plan exactly.
 - Do not include copyrighted characters or franchise-specific elements.
-
+{mode_requirements}
 Return JSON only in this exact structure:
-{{
-  "cover_brief": "...",
-  "pages": [
-    {{"page": 1, "brief": "..."}},
-    {{"page": 2, "brief": "..."}},
-    {{"page": 3, "brief": "..."}},
-    {{"page": 4, "brief": "..."}},
-    {{"page": 5, "brief": "..."}},
-    {{"page": 6, "brief": "..."}},
-    {{"page": 7, "brief": "..."}},
-    {{"page": 8, "brief": "..."}}
-  ]
-}}
-"""
+{json_structure}
+'''
 
     headers = {"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"}
     payload = {
@@ -1369,11 +1556,11 @@ Return JSON only in this exact structure:
             {"role": "user", "content": user},
         ],
         "temperature": 1.0,
-        "max_tokens": 1800,
+        "max_tokens": 2600 if story_mode else 1800,
     }
     response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload, timeout=120)
     if response.status_code >= 400:
-        return fallback_scene_plan(names, description, assignments, age, book_dna)
+        return fallback_scene_plan(names, description, assignments, age, book_dna, story_mode)
     try:
         raw = response.json()["choices"][0]["message"]["content"]
         data = _extract_json_object(raw)
@@ -1385,10 +1572,13 @@ Return JSON only in this exact structure:
             brief = str(item.get("brief", "")).strip()
             if not brief:
                 raise ValueError("Planner page brief missing")
-            normalized.append({"page": i, "brief": brief})
-        return {"cover_brief": str(data["cover_brief"]).strip(), "pages": normalized}
+            story_text = str(item.get("story_text", "")).strip() if story_mode else ""
+            if story_mode and not story_text:
+                raise ValueError("Planner story text missing")
+            normalized.append({"page": i, "brief": brief, "story_text": story_text})
+        return {"cover_brief": str(data["cover_brief"]).strip(), "pages": normalized, "story_mode": story_mode}
     except Exception:
-        return fallback_scene_plan(names, description, assignments, age, book_dna)
+        return fallback_scene_plan(names, description, assignments, age, book_dna, story_mode)
 
 
 def openai_edit(reference_paths: list[Path], prompt: str, quality: str) -> Image.Image:
@@ -1449,11 +1639,20 @@ Treat the Detailed Description as a visual specification, not merely a loose the
 """.strip()
 
 
-def interior_prompt(names: list[str], description: str, page_index: int, assignment: dict, scene_brief: str, age: int, book_dna: dict) -> str:
+def interior_prompt(names: list[str], description: str, page_index: int, assignment: dict, scene_brief: str, age: int, book_dna: dict, story_mode: bool = False, story_text: str = "") -> str:
     indices = assignment["indices"]
     selected = [names[i] for i in indices]
     who = selected[0] if len(selected) == 1 else " and ".join(selected)
     ids = identity_text(names, indices)
+    story_block = ""
+    if story_mode:
+        story_block = f"""
+STORY MODE IS ON.
+This illustration is page {page_index} of one continuous story. Maintain visual continuity with the specified story beat and do not turn it into an unrelated vignette.
+Narrative text for this beat (CONTEXT ONLY — DO NOT DRAW OR RENDER THESE WORDS):
+{story_text}
+The website will typeset that prose beneath the image later. The generated artwork itself must contain NO story text, captions, speech bubbles, signs with readable words, or printed narration.
+"""
     return f"""
 Draw ONE standalone full-page black-and-white coloring-book illustration.
 DETAILED DESCRIPTION:
@@ -1469,7 +1668,7 @@ ENVIRONMENT GUIDANCE:
 
 CREATIVE PAGE BRIEF:
 {scene_brief}
-
+{story_block}
 UNIQUE PAGE RECIPE FOR THIS BOOK:
 Action archetype: {book_dna["page_recipes"][page_index - 1]["action"]}
 Composition cue: {book_dna["page_recipes"][page_index - 1]["composition"]}
@@ -1491,28 +1690,35 @@ def generate_real_job(job_id: str):
     job_dir = Path(job["job_dir"])
     names = job["names"]
     refs = [Path(p) for p in job["reference_paths"]]
+    story_mode = bool(job.get("story_mode", False))
     try:
-        assignments = page_assignments(names)
-        set_job(job_id, assignments=assignments, status="working", progress=3, message="Planning creative scenes…")
+        assignments = job.get("assignments") or page_assignments(names, story_mode)
+        set_job(job_id, assignments=assignments, status="working", progress=3, message="Planning continuous story…" if story_mode else "Planning creative scenes…")
         book_dna = job["book_dna"]
-        scene_plan = plan_scene_briefs(names, job["title"], job["description"], assignments, job["age"], book_dna)
+        scene_plan = plan_scene_briefs(names, job["title"], job["description"], assignments, job["age"], book_dna, story_mode)
         set_job(job_id, scene_plan=scene_plan, progress=8, message="Generating high-quality cover…")
         cover = openai_edit(refs, cover_prompt(names, job["title"], job["description"], scene_plan["cover_brief"], job["age"], book_dna), "high")
-        cover_path = job_dir / "cover.png"
-        cover.save(cover_path, "PNG")
+        cover.save(job_dir / "cover.png", "PNG")
 
         for i, assignment in enumerate(assignments, start=1):
             pct = 12 + int((i - 1) / 8 * 74)
             actors = [names[x] for x in assignment["indices"]]
-            set_job(job_id, progress=pct, message=f"Generating coloring page {i} of 8 — {', '.join(actors)}…")
+            msg = f"Generating story page {i} of 8 — {', '.join(actors)}…" if story_mode else f"Generating coloring page {i} of 8 — {', '.join(actors)}…"
+            set_job(job_id, progress=pct, message=msg)
             selected_refs = [refs[x] for x in assignment["indices"]]
-            page_brief = scene_plan["pages"][i - 1]["brief"]
-            img = openai_edit(selected_refs, interior_prompt(names, job["description"], i, assignment, page_brief, job["age"], book_dna), "low")
+            page_plan = scene_plan["pages"][i - 1]
+            story_text = page_plan.get("story_text", "")
+            img = openai_edit(
+                selected_refs,
+                interior_prompt(names, job["description"], i, assignment, page_plan["brief"], job["age"], book_dna, story_mode, story_text),
+                "low",
+            )
             img.save(job_dir / f"page_{i}.png", "PNG", optimize=True)
 
-        set_job(job_id, progress=90, message="Building print-ready PDF…")
-        pdf = build_pdf(job_dir, job["title"])
-        set_job(job_id, status="done", progress=100, message="Book ready for review.", pdf=str(pdf))
+        set_job(job_id, progress=90, message="Building story PDF…" if story_mode else "Building print-ready PDF…")
+        story_texts = [p.get("story_text", "") for p in scene_plan.get("pages", [])] if story_mode else []
+        pdf = build_pdf(job_dir, job["title"], story_texts=story_texts, age=job["age"])
+        set_job(job_id, status="done", progress=100, message="Story book ready for review." if story_mode else "Book ready for review.", pdf=str(pdf))
     except Exception as exc:
         set_job(job_id, status="error", progress=0, message="Generation stopped.", error=str(exc))
 
@@ -1578,7 +1784,7 @@ def randomized_creative_direction(description: str, names: list[str], book_dna: 
     )
 
 
-def manual_prompt_1(names: list[str], title: str, description: str, direction: str, age: int, book_dna: dict) -> str:
+def manual_prompt_1(names: list[str], title: str, description: str, direction: str, age: int, book_dna: dict, story_mode: bool = False) -> str:
     char_lines = []
     for i, name in enumerate(names, start=1):
         char_lines.append(f"Person {i}: {name}\nUse {name}'s uploaded original photo only as {name}'s identity reference.")
@@ -1595,6 +1801,46 @@ def manual_prompt_1(names: list[str], title: str, description: str, direction: s
 Do NOT cluster all solo scenes first and all shared scenes later. The early, middle, and late portions of the book must each contain a mix of solo and shared scenes. Make sure every character appears throughout the book and is represented fairly.
 
 When a page features one person, make that person the clear identity focus. When a page features {joined} together, keep each person's identity separate and consistent with their corresponding uploaded photo. Do not blend, merge, swap, average, or confuse identities."""
+
+    story_mode_block = ""
+    if story_mode:
+        story_mode_block = f"""
+STORY MODE — REQUIRED
+
+This book must tell ONE continuous 20-page story from beginning to end. Do not create 20 unrelated scenes.
+
+Before generating any artwork, silently storyboard the entire narrative so every page advances the same plot. Maintain continuity of goals, locations, important props, clues, supporting characters, and consequences from page to page.
+
+Use a full 20-page arc rather than rushing the story:
+- Pages 1–3: introduce the characters, setting, and story goal/problem
+- Pages 4–7: begin the journey and early attempts
+- Pages 8–12: complications, discoveries, and meaningful progress
+- Pages 13–16: rising action and larger challenges
+- Pages 17–18: climax and decisive action
+- Page 19: resolution
+- Page 20: satisfying final beat, celebration, or emotional close
+
+STORY TEXT
+
+Every coloring page needs exact narration that will later be typeset BELOW the image in the final PDF.
+{story_copy_guidance(age)}
+
+IMPORTANT: Do NOT render the narration inside the generated image. The coloring artwork itself must contain no captions, speech bubbles, page numbers, or story text. After all 20 standalone coloring-page images are complete, provide a clearly numbered plain-text list:
+Page 1 story text: ...
+Page 2 story text: ...
+...
+Page 20 story text: ...
+
+That exact text list is part of the approved source material for the final PDF.
+
+The Book DNA page recipes still control action/composition/energy, but STORY CONTINUITY OVERRIDES any recipe that would cause a nonsensical jump. Adapt each recipe so it serves the current story beat.
+"""
+    else:
+        story_mode_block = """
+STORY MODE IS OFF
+
+The 20 coloring pages may be varied standalone scenes based on the Detailed Description. Do not add story narration or captions.
+"""
 
     return f"""START A BRAND-NEW CHATGPT CONVERSATION FOR THIS REQUEST.
 
@@ -1640,6 +1886,8 @@ The website generated the following hidden creative fingerprint specifically for
 {book_dna_text(book_dna, include_recipes=True)}
 
 Do not replace these choices with generic defaults. Build the 20-page sequence around this fingerprint. The exact settings and activities must still come from the user's Detailed Description, but the Book DNA must noticeably influence the story structure, scene order, activity emphasis, pacing, composition, recurring visual motif, supporting-character use, and ending.
+
+{story_mode_block}
 
 AGE-APPROPRIATE DETAIL LEVEL
 
@@ -1712,8 +1960,8 @@ COLORING-BOOK STYLE
 
 Every interior image must have:\n- black-and-white line art only\n- white paper with a fully drawn environmental line-art setting\n- bold, clean outlines\n- age-appropriate coloring spaces and complexity\n- for ages 3–4: extra-thick outlines, huge open shapes, very few objects, minimal overlap, almost no texture lines, and generous blank white space\n- progressively more detail for older children and teens\n- no tiny decorative detail for preschool pages\n- no grayscale shading
 - no colored elements
-- no captions
-- no story text
+- no captions rendered inside the artwork
+- no story text rendered inside the artwork
 - no page numbers
 - no empty or generic backgrounds; each page must visibly establish its location with setting details from the Detailed Description
 
@@ -1727,21 +1975,48 @@ Use only original, generic imagery appropriate to the Detailed Description. Do n
 
 FINAL INSTRUCTION
 
-Complete the cover and all 20 separate coloring-page images.
+Complete the cover and all 20 separate coloring-page images. If Story Mode is ON, also provide the exact numbered 20-page story-text list described above.
 
 DO NOT assemble a PDF yet.
 
-STOP once the artwork is complete so I can review it before creating the final print-ready file."""
+STOP once the artwork and, when applicable, the story-text list are complete so I can review them before creating the final print-ready file."""
 
 
-def manual_prompt_2() -> str:
-    return """I am satisfied with the artwork created above.
+def manual_prompt_2(story_mode: bool = False) -> str:
+    story_section = ""
+    if story_mode:
+        story_section = """
+STORY MODE LAYOUT
+
+Story Mode is ON. In addition to the approved artwork, use the EXACT approved Page 1–20 story-text list already created in this conversation.
+
+For PDF pages 3–22:
+- place the corresponding approved coloring image in the upper portion of the Letter page
+- preserve the image's proportions and do not crop important artwork
+- reserve a clean white text area beneath the image
+- typeset the matching story text as crisp real text beneath the image
+- center or cleanly align the text and wrap it naturally
+- use an age-appropriate, highly readable font size
+- do NOT ask image generation to recreate the words
+- do NOT alter, paraphrase, shorten, or reorder the approved story text
+- keep each page's story text matched to the correct coloring image
+
+The story text must remain selectable/vector-sharp PDF text whenever technically possible.
+"""
+    else:
+        story_section = """
+STORY MODE IS OFF. Do not add captions, narration, or story text beneath the coloring pages.
+"""
+
+    return f"""I am satisfied with the artwork created above.
 
 Now use the EXISTING APPROVED cover and 20 coloring-book images from this conversation to create the finished print-ready coloring book PDF.
 
 Do not redesign or regenerate the artwork unless an image is technically missing or unusable.
 
 The individual images are now source assets for the final file.
+
+{story_section}
 
 FINAL BOOK STRUCTURE
 
@@ -1784,18 +2059,18 @@ PDF ASSEMBLY
 
 Assemble the existing approved artwork and blank pages into ONE downloadable PDF. Do not stop after describing how the PDF would be created. Actually create the file.
 
-VERIFY BEFORE FINISHING
+TECHNICAL VERIFICATION
 
-Programmatically verify that:
-- the PDF file exists
+Before returning the final file, verify programmatically that:
 - the PDF contains exactly 24 pages
-- every page measures exactly 8.5 × 11 inches
-- page 1 contains the approved color cover
+- every page is exactly 612 × 792 points
+- page 1 contains the approved cover
 - page 2 is completely blank
-- pages 3–22 contain the 20 approved coloring pages
+- pages 3–22 contain the 20 approved coloring images in order
 - each coloring image occupies its own individual page
 - pages 23 and 24 are completely blank
 - no artwork has been stretched or distorted
+- if Story Mode is ON, every interior page has the correct matching story text beneath its image
 
 If a technical formatting problem is found, correct it before returning the file.
 
@@ -1826,6 +2101,7 @@ def config():
         "live_pdf_pages": 12,
         "manual_pdf_pages": 24,
         "book_dna_enabled": True,
+        "story_mode_enabled": True,
         "version": APP_VERSION,
     }
 
@@ -1904,6 +2180,7 @@ async def make_manual_prompts(request: Request):
     title = str(body.get("title", "")).strip()
     description = str(body.get("description", "")).strip()
     age = int(body.get("age", 8) or 8)
+    story_mode = bool(body.get("story_mode", False))
     if not names or not title or not description:
         raise HTTPException(400, "Names, title, a target age, and a detailed description are required.")
     if age < 3 or age > 17:
@@ -1911,10 +2188,11 @@ async def make_manual_prompts(request: Request):
     book_dna = generate_book_dna(age, 20)
     direction = randomized_creative_direction(description, names, book_dna)
     return {
-        "prompt1": manual_prompt_1(names, title, description, direction, age, book_dna),
-        "prompt2": manual_prompt_2(),
+        "prompt1": manual_prompt_1(names, title, description, direction, age, book_dna, story_mode),
+        "prompt2": manual_prompt_2(story_mode),
         "creative_direction": direction,
         "book_dna_id": book_dna["id"],
+        "story_mode": story_mode,
     }
 
 
@@ -1925,6 +2203,7 @@ async def create_job(
     age: int = Form(...),
     character_names: list[str] = Form(...),
     photos: list[UploadFile] = File(...),
+    story_mode: bool = Form(False),
 ):
     cleanup_old_jobs()
     title = title.strip()
@@ -1971,7 +2250,8 @@ async def create_job(
         "reference_paths": refs,
         "job_dir": str(job_dir),
         "pdf": None,
-        "assignments": page_assignments(names),
+        "assignments": page_assignments(names, story_mode),
+        "story_mode": story_mode,
         "book_dna": generate_book_dna(age, 8),
         "scene_plan": None,
     }
@@ -1989,6 +2269,7 @@ def job_status(job_id: str):
         "message": job.get("message", ""),
         "error": job.get("error"),
         "kind": job.get("kind", "live"),
+        "story_mode": bool(job.get("story_mode", False)),
     }
     if job["status"] == "done":
         payload["download"] = f"/api/jobs/{job_id}/download"
@@ -2004,10 +2285,17 @@ def job_status(job_id: str):
             ]
         else:
             payload["pdf_pages"] = 12
+            scene_pages = (job.get("scene_plan") or {}).get("pages", [])
             payload["images"] = [
-                {"label": "Cover", "url": f"/api/jobs/{job_id}/image/cover", "retry": False, "quality": "High"},
+                {"label": "Cover", "url": f"/api/jobs/{job_id}/image/cover", "retry": False, "quality": "High", "story_text": ""},
                 *[
-                    {"label": f"Coloring page {i}", "url": f"/api/jobs/{job_id}/image/{i}", "retry": True, "quality": "Low"}
+                    {
+                        "label": f"Coloring page {i}",
+                        "url": f"/api/jobs/{job_id}/image/{i}",
+                        "retry": True,
+                        "quality": "Low",
+                        "story_text": (scene_pages[i - 1].get("story_text", "") if i - 1 < len(scene_pages) else ""),
+                    }
                     for i in range(1, 9)
                 ],
             ]
@@ -2052,12 +2340,16 @@ def retry_page(job_id: str, page_num: int):
     refs = [Path(p) for p in job["reference_paths"]]
     selected_refs = [refs[x] for x in assignment["indices"]]
     book_dna = job.get("book_dna") or generate_book_dna(job["age"], 8)
-    scene_plan = job.get("scene_plan") or fallback_scene_plan(job["names"], job["description"], job["assignments"], job["age"], book_dna)
-    page_brief = scene_plan["pages"][page_num - 1]["brief"]
+    scene_plan = job.get("scene_plan") or fallback_scene_plan(job["names"], job["description"], job["assignments"], job["age"], book_dna, bool(job.get("story_mode", False)))
+    page_plan = scene_plan["pages"][page_num - 1]
+    page_brief = page_plan["brief"]
+    story_text = page_plan.get("story_text", "")
+    story_mode = bool(job.get("story_mode", False))
     try:
-        img = openai_edit(selected_refs, interior_prompt(job["names"], job["description"], page_num, assignment, page_brief, job["age"], book_dna), "medium")
+        img = openai_edit(selected_refs, interior_prompt(job["names"], job["description"], page_num, assignment, page_brief, job["age"], book_dna, story_mode, story_text), "medium")
         img.save(Path(job["job_dir"]) / f"page_{page_num}.png", "PNG", optimize=True)
-        pdf = build_pdf(Path(job["job_dir"]), job["title"])
+        story_texts = [p.get("story_text", "") for p in scene_plan.get("pages", [])] if story_mode else []
+        pdf = build_pdf(Path(job["job_dir"]), job["title"], story_texts=story_texts, age=job["age"])
         set_job(job_id, status="done", progress=100, message=f"Page {page_num} regenerated at medium quality.", pdf=str(pdf))
         return {"ok": True, "message": f"Page {page_num} regenerated at medium quality."}
     except Exception as exc:
