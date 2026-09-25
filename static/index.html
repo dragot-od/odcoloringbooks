@@ -11,6 +11,7 @@
 
 .idea-helper{margin-top:22px;padding:20px;border:2px solid rgba(91,91,214,.30);border-radius:20px;background:linear-gradient(135deg,#f3f1ff 0%,#f4fbff 58%,#f8fff9 100%);box-shadow:0 10px 28px rgba(91,91,214,.08)}
 .idea-helper-head{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}.idea-helper h3{margin:3px 0 5px;font-size:20px}.idea-helper p{margin:0;color:var(--muted);font-size:13px;line-height:1.5;max-width:760px}.idea-chip{display:inline-block;font-size:11px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;color:#fff;background:var(--accent);border-radius:999px;padding:6px 9px}.idea-name-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:15px}.idea-helper .btn{box-shadow:0 8px 18px rgba(91,91,214,.17)}
+.story-mode-box{grid-column:1/-1;display:flex;justify-content:space-between;gap:18px;align-items:center;padding:15px 16px;border:1px solid #cfd5ff;border-radius:16px;background:linear-gradient(90deg,#faf9ff,#f4f8ff)}.story-mode-copy b{display:block;font-size:14px;margin-bottom:3px}.story-mode-copy span{display:block;color:var(--muted);font-size:12px;line-height:1.45;max-width:760px}.switch{position:relative;display:inline-block;width:54px;height:30px;flex:0 0 auto}.switch input{opacity:0;width:0;height:0}.slider{position:absolute;inset:0;cursor:pointer;background:#c9cfda;border-radius:999px;transition:.2s}.slider:before{content:"";position:absolute;width:22px;height:22px;left:4px;top:4px;background:white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.18);transition:.2s}.switch input:checked+.slider{background:var(--accent)}.switch input:checked+.slider:before{transform:translateX(24px)}.story-copy{margin:5px 0 10px;padding:9px 10px;background:#faf9ff;border-left:3px solid var(--accent);border-radius:8px;font-size:12px;line-height:1.45;color:#41485a}
 @media(max-width:760px){.grid,.manual{grid-template-columns:1fr}.full{grid-column:auto}.person{grid-template-columns:1fr}.gallery-grid{grid-template-columns:1fr 1fr}.preset-grid{grid-template-columns:1fr 1fr}.wrap{padding-top:25px}}
 @media(max-width:480px){.gallery-grid,.preset-grid{grid-template-columns:1fr}}
 </style>
@@ -69,6 +70,10 @@
         <div class="field full"><label>Book title</label><input id="title" placeholder="Enter the coloring-book title" required /></div>
         <div class="field"><label>Target age</label><input id="age" type="number" min="3" max="17" placeholder="e.g. 5" required /></div>
         <div class="field"><label>Age guidance</label><div class="note" style="margin-top:0">Age 3–4 uses preschool-simple pages: extra-thick outlines, huge coloring spaces, very few objects, and lots of white space. Detail increases gradually for older kids and teens.</div></div>
+        <div class="story-mode-box">
+          <div class="story-mode-copy"><b>Story Mode</b><span>Turn this on to make the interior pages tell one continuous beginning-to-end story. The site generates age-appropriate narration and prints it beneath each coloring image. The 20-page Manual ChatGPT prompts use the same Story Mode setting.</span></div>
+          <label class="switch" aria-label="Story Mode"><input id="storyMode" type="checkbox"><span class="slider"></span></label>
+        </div>
         <div class="field full">
           <label>Detailed Description</label>
           <textarea id="description" required placeholder="Describe the cartoon in detail: where it takes place, different rooms or locations, what the characters are doing, important props or objects, side characters or creatures, and the mood/style you want. The more detail you provide, the more varied and specific the pages can be."></textarea>
@@ -95,8 +100,8 @@
         <div class="help" style="margin-top:10px">The generator fills the main people names, title, target age, and Detailed Description. With multiple people, their names are combined naturally in the generated title.</div>
       </div>
 
-      <div class="note">Automatic live PDF layout: cover · blank page · 8 coloring pages · 2 blank pages = <b>12 true US Letter pages</b>.</div>
-      <div class="actions"><button class="btn" id="generate" type="submit">Generate Live Book</button></div>
+      <div class="note">Automatic live PDF layout: cover · blank page · 8 coloring pages · 2 blank pages = <b>12 true US Letter pages</b>. When Story Mode is on, age-appropriate story text is typeset beneath each of the 8 coloring images.</div>
+      <div class="actions"><button class="btn" id="generate" type="submit">Generate Live Book</button><button class="btn secondary small" id="clearStandard" type="button">Clear Fields</button></div>
       <div class="error" id="error"></div>
     </form>
 
@@ -114,13 +119,13 @@
   <section class="card" id="manualSection">
     <div class="section-kicker">3. Manual GPT</div>
     <h2>Manual ChatGPT fallback</h2>
-    <p class="sub">This does not use your website API credit. It builds two prompts from the title, target age, Detailed Description, and character names entered in the Live Generator above—including multiple character names, titles, descriptions, and tones filled in by the optional Idea Generator. Every time you generate Prompt 1, the site also creates a new hidden <b>Book DNA</b> so repeated customer inputs are pushed toward a materially different 20-page scene sequence.</p>
+    <p class="sub">This does not use your website API credit. It builds two prompts from the title, target age, Detailed Description, and character names entered in the Live Generator above—including multiple character names, titles, descriptions, and tones filled in by the optional Idea Generator. Every time you generate Prompt 1, the site also creates a new hidden <b>Book DNA</b> so repeated customer inputs are pushed toward a materially different 20-page scene sequence. The Story Mode toggle above is carried into both manual prompts.</p>
     <div class="fresh"><b>Fresh redesign + uniqueness rule:</b> every new artwork attempt should start in a brand-new ChatGPT conversation. Re-upload only the original source photos, then paste a newly generated Prompt 1. Each newly generated Prompt 1 contains a different Book DNA creative fingerprint. Do not reuse old AI artwork as a reference.</div>
     <div class="actions" style="margin-top:0;margin-bottom:14px"><button class="btn secondary" id="makePrompts" type="button">Generate ChatGPT Prompts</button><button class="btn secondary" id="differentPrompt" type="button">Generate Different Artwork Prompt</button></div>
     <div class="manual">
       <div class="promptbox">
         <h3>Prompt 1 — Create artwork</h3>
-        <p>Start a NEW ChatGPT conversation, upload the original source photo(s), then paste this prompt. It contains a unique Book DNA for this attempt, creates 1 cover + 20 individual coloring pages, and stops for review.</p>
+        <p>Start a NEW ChatGPT conversation, upload the original source photo(s), then paste this prompt. It contains a unique Book DNA for this attempt, creates 1 cover + 20 individual coloring pages, and stops for review. If Story Mode is on, it also requires one continuous 20-page plot and an exact narration list for the final PDF.</p>
         <textarea id="prompt1" readonly placeholder="Click Generate ChatGPT Prompts"></textarea>
         <div class="actions"><button class="btn small" type="button" data-copy="prompt1">Copy Artwork Prompt</button></div>
       </div>
@@ -147,6 +152,8 @@ const gallery=document.getElementById('gallery');
 const galleryGrid=document.getElementById('galleryGrid');
 const download=document.getElementById('download');
 const generate=document.getElementById('generate');
+const clearStandardBtn=document.getElementById('clearStandard');
+const storyMode=document.getElementById('storyMode');
 const randomIdeaBtn=document.getElementById('randomIdea');
 const clearIdeaBtn=document.getElementById('clearIdea');
 const ideaNames=document.getElementById('ideaNames');
@@ -244,11 +251,28 @@ function renderDemoGallery(j){
 
 function showError(msg){error.textContent=msg;error.style.display='block';}
 function formDataForBook(){
-  const fd=new FormData();fd.append('title',document.getElementById('title').value.trim());fd.append('age',document.getElementById('age').value.trim());fd.append('description',document.getElementById('description').value.trim());
+  const fd=new FormData();fd.append('title',document.getElementById('title').value.trim());fd.append('age',document.getElementById('age').value.trim());fd.append('description',document.getElementById('description').value.trim());fd.append('story_mode',storyMode.checked?'true':'false');
   [...chars.children].forEach(el=>{fd.append('character_names',el.querySelector('.pname').value.trim());const f=el.querySelector('.pphoto').files[0];if(f)fd.append('photos',f);});return fd;
 }
-function readFields(){return {title:document.getElementById('title').value.trim(),age:parseInt(document.getElementById('age').value,10),description:document.getElementById('description').value.trim(),names:[...chars.querySelectorAll('.pname')].map(x=>x.value.trim()).filter(Boolean)};}
+function readFields(){return {title:document.getElementById('title').value.trim(),age:parseInt(document.getElementById('age').value,10),description:document.getElementById('description').value.trim(),names:[...chars.querySelectorAll('.pname')].map(x=>x.value.trim()).filter(Boolean),story_mode:storyMode.checked};}
 function validate(needPhotos=true){const f=readFields();if(!f.title||!f.description||!f.names.length||!Number.isInteger(f.age)){showError('Enter a title, target age, a detailed description, and at least one person.');return false;}if(f.age<3||f.age>17){showError('Target age must be between 3 and 17.');return false;}if(needPhotos){for(const el of chars.children){if(!el.querySelector('.pphoto').files[0]){showError('Every person needs an uploaded photo.');return false;}}}return true;}
+
+function clearStandardFields(){
+  document.getElementById('title').value='';
+  document.getElementById('age').value='';
+  document.getElementById('description').value='';
+  storyMode.checked=false;
+  chars.innerHTML='';
+  addCharacter('');
+  gallery.style.display='none';
+  progress.style.display='none';
+  bar.style.width='0%';
+  pct.textContent='0%';
+  message.textContent='Starting…';
+  error.style.display='none';
+  currentJob=null;
+}
+clearStandardBtn.onclick=clearStandardFields;
 
 async function fillRandomIdea(){
   error.style.display='none';
@@ -290,7 +314,8 @@ form.onsubmit=async e=>{
 async function poll(id){
   try{const r=await fetch('/api/jobs/'+id);const j=await r.json();if(!r.ok)throw new Error(j.detail||'Status error');bar.style.width=(j.progress||0)+'%';pct.textContent=(j.progress||0)+'%';message.textContent=j.message||'Working…';if(j.status==='done'){generate.disabled=false;renderGallery(j);return;}if(j.status==='error')throw new Error(j.error||'Generation failed');setTimeout(()=>poll(id),1300);}catch(err){showError(err.message);generate.disabled=false;}
 }
-function renderGallery(j){galleryGrid.innerHTML='';download.href=j.download;gallery.style.display='block';j.images.forEach(item=>{const div=document.createElement('div');div.className='art';const bust=Date.now();div.innerHTML=`<img src="${item.url}?v=${bust}" alt="${item.label}"><div class="art-head"><b>${item.label}</b><span class="badge">${item.quality}</span></div>${item.retry?`<button type="button" class="btn secondary small retry">Retry Medium</button>`:''}`;if(item.retry){div.querySelector('.retry').onclick=()=>retry(item,div);}galleryGrid.appendChild(div);});gallery.scrollIntoView({behavior:'smooth',block:'start'});}
+function escapeHtml(s){return String(s||'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+function renderGallery(j){galleryGrid.innerHTML='';download.href=j.download;gallery.style.display='block';j.images.forEach(item=>{const div=document.createElement('div');div.className='art';const bust=Date.now();const story=item.story_text?`<div class="story-copy">${escapeHtml(item.story_text)}</div>`:'';div.innerHTML=`<img src="${item.url}?v=${bust}" alt="${item.label}"><div class="art-head"><b>${item.label}</b><span class="badge">${item.quality}</span></div>${story}${item.retry?`<button type="button" class="btn secondary small retry">Retry Medium</button>`:''}`;if(item.retry){div.querySelector('.retry').onclick=()=>retry(item,div);}galleryGrid.appendChild(div);});gallery.scrollIntoView({behavior:'smooth',block:'start'});}
 async function retry(item,card){const btn=card.querySelector('.retry');btn.disabled=true;btn.textContent='Regenerating…';try{const page=item.label.match(/\d+/)[0];const r=await fetch(`/api/jobs/${currentJob}/retry/${page}`,{method:'POST'});const j=await r.json();if(!r.ok)throw new Error(j.detail||'Retry failed');card.querySelector('img').src=item.url+'?v='+Date.now();card.querySelector('.badge').textContent='Medium';btn.textContent='Retry Medium';download.href=`/api/jobs/${currentJob}/download?v=${Date.now()}`;message.textContent=j.message||'Page updated.';}catch(err){showError(err.message);btn.textContent='Retry Medium';}finally{btn.disabled=false;}}
 
 async function generatePrompts(){error.style.display='none';if(!validate(false))return;const f=readFields();try{const r=await fetch('/api/manual-prompts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(f)});const j=await r.json();if(!r.ok)throw new Error(j.detail||'Could not generate prompts');document.getElementById('prompt1').value=j.prompt1;document.getElementById('prompt2').value=j.prompt2;}catch(err){showError(err.message);}}
