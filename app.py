@@ -1018,6 +1018,17 @@ DEMO_PRESETS = {
         "interior_pages": 8,
         "pdf_pages": 12,
     },
+    "story_mode": {
+        "label": "Story Mode",
+        "title": "Willy Wishes to Be Tall",
+        "name": "Willy",
+        "age": 6,
+        "description": "A connected story where Willy wishes he could be tall, enjoys the good parts at first, runs into the difficult parts too, and finally realizes he was happy being short after all.",
+        "interior_pages": 20,
+        "pdf_pages": 24,
+        "is_story_demo": True,
+        "demo_blurb": "Preview a full beginning-to-end story with simple text beneath each page.",
+    },
 }
 
 
@@ -2117,6 +2128,8 @@ def demo_presets():
             "description": value["description"],
             "interior_pages": value["interior_pages"],
             "pdf_pages": value["pdf_pages"],
+            "is_story_demo": bool(value.get("is_story_demo", False)),
+            "demo_blurb": value.get("demo_blurb", ""),
         }
         for key, value in DEMO_PRESETS.items()
     }
